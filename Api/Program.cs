@@ -4,9 +4,9 @@ using IngressosAPI.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Banco de dados SQLite (cria o arquivo "ingressos.db" automaticamente)
+// Banco de dados SQLite (cria o arquivo "data.db" automaticamente)
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=ingressos.db"));
+    options.UseSqlite("Data Source=data.db"));
 
 // Registra os repositórios para injeção de dependência
 builder.Services.AddScoped<EventoRepository>();
