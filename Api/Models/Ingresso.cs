@@ -1,8 +1,7 @@
-namespace IngressosAPI.Models
-{
+namespace IngressosAPI.Models {
     // Tabela "Ingressos" no banco de dados
-    public class Ingresso
-    {
+
+    public class Ingresso {
         public int Id { get; set; }
         public string NomeComprador { get; set; } = "";
         public string CPF { get; set; } = "";
@@ -13,6 +12,6 @@ namespace IngressosAPI.Models
 
         // Chave estrangeira: a qual evento esse ingresso pertence
         public int EventoId { get; set; }
-        public Evento? Evento { get; set; }
+        public Evento Evento { get; set; }
     }
 }

@@ -1,8 +1,7 @@
-namespace IngressosAPI.Models
-{
+namespace IngressosAPI.Models {
     // Tabela "Eventos" no banco de dados
-    public class Evento
-    {
+    
+    public class Evento {
         public int Id { get; set; }
         public string Nome { get; set; } = "";
         public string Local { get; set; } = "";
