@@ -1,0 +1,1 @@
+Aqui será destinado para o React no futuro.
