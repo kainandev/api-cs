@@ -1,6 +1,0 @@
-@ApiCs_HostAddress = http://localhost:5142
-
-GET {{ApiCs_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
