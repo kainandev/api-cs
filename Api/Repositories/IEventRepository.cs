@@ -1,14 +1,11 @@
-using ApiCs.Models;
+using Api.Models;
 
-namespace ApiCs.Repositories {
-    // Interface define o "contrato" do repositório
-    // Ou seja, quais métodos qualquer repositório de Event DEVE ter
-    // Isso separa a lógica da aplicação do acesso ao banco
+namespace Api.Repositories {
     public interface IEventRepository {
-        Task<List<Event>> ListarTodos();
-        Task<Event> BuscarPorId(int id);
-        Task<Event> Criar(Event Event);
-        Task<Event> Atualizar(int id, Event Event);
-        Task<bool> Deletar(int id);
+        Task<IEnumerable<Event>> GetAll();
+        Task<Event?> GetById(int id);
+        Task<Event> Create(Event ev);
+        Task<Event?> Update(int id, Event updatedData);
+        Task<bool> Delete(int id);
     }
 }

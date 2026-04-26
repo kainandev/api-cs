@@ -1,13 +1,13 @@
-using ApiCs.Models;
+using Api.Models;
 
-namespace ApiCs.Repositories
-{
-    // Interface do repositório de Ticket
+namespace Api.Repositories {
     public interface ITicketRepository {
-        Task<List<Ticket>> ListarTodos();
-        Task<List<Ticket>> ListarPorEvent(int EventId);
-        Task<Ticket?> BuscarPorId(int id);
-        Task<Ticket> Criar(Ticket Ticket);
-        Task<bool> Deletar(int id);
+        Task<IEnumerable<Ticket>> GetAll();
+        Task<Ticket?> GetById(string id);
+        Task<IEnumerable<Ticket>> GetByUserId(string userId);
+        Task<IEnumerable<Ticket>> GetByEventId(int eventId);
+        Task<Ticket> Create(Ticket ticket);
+        Task<bool> Delete(string id);
+        Task<bool> CheckIn(string id);
     }
 }

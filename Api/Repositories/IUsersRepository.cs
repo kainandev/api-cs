@@ -1,11 +1,11 @@
-using ApiCs.Models;
+using Api.Models;
 
-namespace ApiCs.Repositories {
-    public interface IUsersRepository {
+namespace Api.Repositories {
+    public interface IUserRepository {
         Task<IEnumerable<User>> GetAll();
         Task<User?> GetById(string id);
         Task<User> Create(User user);
-        Task<User?> Update(string id, User user);
+        Task<User?> Update(string id, User updatedData);
         Task<bool> Delete(string id);
     }
 }

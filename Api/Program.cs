@@ -1,20 +1,27 @@
 using Microsoft.EntityFrameworkCore;
-using ApiCs.Data;
-using ApiCs.Repositories;
+using System.Text.Json.Serialization;
+using Api.Data;
+using Api.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Banco de dados SQLite (cria o arquivo "data.db" automaticamente)
+// Banco de dados SQLite (o arquivo data.db é criado automaticamente)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=data.db")
 );
 
-// Registra os repositórios para injeção de dependência
-builder.Services.AddScoped<EventRepository>();
-builder.Services.AddScoped<TicketRepository>();
-builder.Services.AddScoped<IUsersRepository, UsersRepository>();
+// Registro dos repositórios para injeção de dependência
+// Toda vez que um controller pedir um IUserRepository, o .NET entrega um UserRepository
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<IEventTicketRepository, EventTicketRepository>();
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 
-builder.Services.AddControllers();
+// Configura o JSON para ignorar referências circulares na serialização
+builder.Services.AddControllers().AddJsonOptions(options => {
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -26,12 +33,9 @@ using (var scope = app.Services.CreateScope()) {
     db.Database.EnsureCreated();
 }
 
-// Instancia Swegger para documentação da API
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// Mapeia os controladores para as rotas da API
 app.MapControllers();
 
-// Inicia a aplicação
 app.Run();

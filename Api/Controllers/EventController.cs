@@ -1,143 +1,153 @@
 using Microsoft.AspNetCore.Mvc;
-using ApiCs.Models;
-using ApiCs.Repositories;
+using Api.Models;
+using Api.Repositories;
 
-namespace TicketsAPI.Controllers {
+namespace Api.Controllers {
     [ApiController]
-    [Route("api/Events")]
-    
+    [Route("api/events")]
     public class EventsController : ControllerBase {
-        // Injetando o repositório de Events para acessar os dados
-        private readonly EventRepository _repo;
+        private readonly IEventRepository _eventRepository;
+        private readonly ITicketRepository _ticketRepository;
 
-        // Construtor da classe para injeção de dependências
-        public EventsController(EventRepository repo) {
-            _repo = repo;
+        public EventsController(IEventRepository eventRepository, ITicketRepository ticketRepository) {
+            _eventRepository = eventRepository;
+            _ticketRepository = ticketRepository;
         }
 
-        // GET /api/Events
+        // GET /api/events
         [HttpGet]
-        public async Task<ActionResult<List<Event>>> ListarTodos() {
-            // Regra: retorna a lista de todos os Events cadastrados no sistema
-            var Events = await _repo.ListarTodos();
-            
-            // Regra: se não houver Events cadastrados, retorna lista vazia (200 OK)
-            return Ok(Events);
+        public async Task<IActionResult> GetAll() {
+            var events = await _eventRepository.GetAll();
+            return Ok(events);
         }
 
-        // GET /api/Events/3
+        // GET /api/events/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<Event>> BuscarPorId(int id) {
-            // Regra: se o Event não existir, retorna 404
-            var Event = await _repo.BuscarPorId(id);
+        public async Task<IActionResult> GetById(int id) {
+            var ev = await _eventRepository.GetById(id);
 
-            // Regra: se o Event existir, retorna os dados do Event (200 OK)
-            if (Event == null) {
-                return NotFound("Event não encontrado.");
-                
+            if (ev == null) {
+                return NotFound("Evento não encontrado.");
             }
 
-            return Ok(Event);
+            return Ok(ev);
         }
 
-        // POST /api/Events
+        // POST /api/events
         [HttpPost]
-        public async Task<ActionResult<Event>> Criar([FromBody] Event Event) {
-            // Regra: não pode criar Event com data no passado
-            if (Event.Date < DateTime.Now) {
-                return BadRequest("A data do Event não pode ser no passado.");
-                
+        public async Task<IActionResult> Create([FromBody] Event ev) {
+            if (string.IsNullOrWhiteSpace(ev.Name)) {
+                return BadRequest("O nome do evento é obrigatório.");
             }
 
-            // Regra: não pode criar Event com preço base negativo
-            var criado = await _repo.Criar(Event);
-            
-            return Ok(criado);
+            // Regra: não pode criar evento com data no passado
+            if (ev.Date < DateTime.UtcNow) {
+                return BadRequest("A data do evento não pode ser no passado.");
+            }
+
+            var created = await _eventRepository.Create(ev);
+
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        // PUT /api/Events/3
+        // PUT /api/events/{id}
         [HttpPut("{id}")]
-        public async Task<ActionResult<Event>> Atualizar(int id, [FromBody] Event dadosNovos) {
-            // Regra: não pode reduzir capacidade abaixo de Tickets já vendidos
-            var existente = await _repo.BuscarPorId(id);
-            
-            // Regra: se o Event não existir, retorna 404
-            if (existente == null) {
-                return NotFound("Event não encontrado.");
+        public async Task<IActionResult> Update(int id, [FromBody] Event updatedData) {
+            var existing = await _eventRepository.GetById(id);
 
+            if (existing == null) {
+                return NotFound("Evento não encontrado.");
             }
 
-            // Regra: não pode atualizar Event para data no passado
-            if (dadosNovos.Date < DateTime.Now) {
-                return BadRequest("O Event já foi finalizado.");
+            // Regra: não pode alterar data de evento para o passado
+            if (updatedData.Date < DateTime.UtcNow) {
+                return BadRequest("A nova data do evento não pode ser no passado.");
             }
 
-            if (dadosNovos.Amount < existente.TicketsSells) {
-                return BadRequest(
-                    $"Capacidade não pode ser menor que os Tickets já vendidos ({existente.TicketsSells})."
-                );
-                
-            }
+            var updated = await _eventRepository.Update(id, updatedData);
 
-            // Regra: atualiza os dados do Event e retorna os dados atualizados (200 OK)
-            var atualizado = await _repo.Atualizar(id, dadosNovos);
-            
-            return Ok(atualizado);
+            return Ok(updated);
         }
 
-        // DELETE /api/Events/3
+        // DELETE /api/events/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Deletar(int id) {
-            
-            // Regra: se o Event não existir, retorna 404
-            var Event = await _repo.BuscarPorId(id);
-            
-            // Regra: se o Event não existir, retorna 404
-            if (Event == null) {
-                return NotFound("Event não encontrado.");
-                
+        public async Task<IActionResult> Delete(int id) {
+            var ev = await _eventRepository.GetById(id);
+
+            if (ev == null) {
+                return NotFound("Evento não encontrado.");
             }
 
-            // Regra: não pode deletar Event com Tickets vendidos
-            if (Event.TicketsSells > 0) {
-                return BadRequest("Não é possível excluir um Event que já tem Tickets vendidos.");
-                
+            // Regra: não pode excluir evento que já possui ingressos vendidos em qualquer lote
+            bool hasTicketsSold = ev.EventTickets.Any(et => et.SoldAmount > 0);
+
+            if (hasTicketsSold) {
+                return BadRequest("Não é possível excluir um evento que possui ingressos vendidos.");
             }
 
-            // Regra: deleta o Event e retorna mensagem de sucesso (200 OK)
-            await _repo.Deletar(id);
+            await _eventRepository.Delete(id);
 
-            return Ok("Event removido com sucesso.");
+            return NoContent();
         }
 
-        // GET /api/Events/3/resumo  →  relatório financeiro do Event
-        [HttpGet("{id}/resumo")]
-        public async Task<ActionResult> Resumo(int id) {
-            // Regra: se o Event não existir, retorna 404
-            var Event = await _repo.BuscarPorId(id);
-            
-            // Regra: se o Event não existir, retorna 404
-            if (Event == null) {
-                return NotFound("Event não encontrado.");
-                
+        // GET /api/events/{id}/summary  →  resumo financeiro do evento
+        [HttpGet("{id}/summary")]
+        public async Task<IActionResult> GetSummary(int id) {
+            var ev = await _eventRepository.GetById(id);
+
+            if (ev == null) {
+                return NotFound("Evento não encontrado.");
             }
-            // Regra: se o Event existir, retorna um resumo financeiro do Event (200 OK)
-            decimal totalArrecadado = Event.Ticket.Sum(i => i.PriceFinal);
 
-            // Cálculo do ticket médio (total arrecadado dividido pela quantidade de Tickets vendidos)
-            decimal ticketMedio = Event.Ticket.Count > 0 ? totalArrecadado / Event.Ticket.Count : 0;
+            var tickets = (await _ticketRepository.GetByEventId(id)).ToList();
 
-            // Regra: retorna um resumo financeiro do Event (200 OK)
+            decimal totalRevenue = tickets.Sum(t => t.PriceFinal);
+            int totalSold = tickets.Count;
+            decimal averagePrice = totalSold > 0 ? Math.Round(totalRevenue / totalSold, 2) : 0;
+            int totalCapacity = ev.EventTickets.Sum(et => et.TotalAmount);
+
             return Ok(new {
-                Event = Event.Name,
-                TicketsVendidos = Event.TicketsSells,
-                VagasRestantes = Event.RestAmount,
-                TotalArrecadado = totalArrecadado,
-                TicketMedio = Math.Round(ticketMedio, 2),
-                QtdNormal = Event.Ticket.Count(i => i.typeTicket == TypeTicket.Normal),
-                QtdMeia = Event.Ticket.Count(i => i.typeTicket == TypeTicket.Middle),
-                QtdVIP = Event.Ticket.Count(i => i.typeTicket == TypeTicket.VIP)
+                EventName = ev.Name,
+                EventDate = ev.Date,
+                TotalCapacity = totalCapacity,
+                TotalSold = totalSold,
+                RemainingSpots = totalCapacity - totalSold,
+                TotalRevenue = totalRevenue,
+                AverageTicketPrice = averagePrice,
+                Batches = ev.EventTickets.Select(et => new {
+                    BatchName = et.Name,
+                    Type = et.Type.ToString(),
+                    Price = et.Price,
+                    Sold = et.SoldAmount,
+                    Available = et.AvailableAmount,
+                    IsActive = et.IsActive
+                })
             });
+        }
+
+        // GET /api/events/{id}/attendees  →  lista de participantes para controle de entrada
+        [HttpGet("{id}/attendees")]
+        public async Task<IActionResult> GetAttendees(int id) {
+            var ev = await _eventRepository.GetById(id);
+
+            if (ev == null) {
+                return NotFound("Evento não encontrado.");
+            }
+
+            var tickets = await _ticketRepository.GetByEventId(id);
+
+            var attendees = tickets.Select(t => new {
+                TicketId = t.Id,
+                UserId = t.UserId,
+                BatchName = t.EventTicket?.Name,
+                TicketType = t.EventTicket?.Type.ToString(),
+                PricePaid = t.PriceFinal,
+                PurchasedAt = t.PurchasedAt,
+                CheckedIn = t.IsUsed,
+                CheckedInAt = t.UsedAt
+            });
+
+            return Ok(attendees);
         }
     }
 }

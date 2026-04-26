@@ -1,160 +1,186 @@
 using Microsoft.AspNetCore.Mvc;
-using ApiCs.Data;
-using ApiCs.Models;
-using ApiCs.Repositories;
+using Api.Models;
+using Api.Repositories;
 
-namespace TicketsAPI.Controllers {
-    
+namespace Api.Controllers {
     [ApiController]
-    [Route("api/Tickets")]
+    [Route("api/tickets")]
     public class TicketsController : ControllerBase {
+        private readonly ITicketRepository _ticketRepository;
+        private readonly IEventTicketRepository _eventTicketRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IEventRepository _eventRepository;
 
-        // Injetando o repositório e o contexto do banco de dados
-        private readonly TicketRepository _repo;
-        
-        // Injetando o contexto do banco de dados para poder atualizar o contador de vendidos no Event
-        private readonly AppDbContext _db;
-
-        // Construtor da classe para injeção de dependências
-        public TicketsController(TicketRepository repo, AppDbContext db) {
-            _repo = repo;
-            _db   = db;
+        public TicketsController(
+            ITicketRepository ticketRepository,
+            IEventTicketRepository eventTicketRepository,
+            IUserRepository userRepository,
+            IEventRepository eventRepository) {
+            _ticketRepository = ticketRepository;
+            _eventTicketRepository = eventTicketRepository;
+            _userRepository = userRepository;
+            _eventRepository = eventRepository;
         }
 
-        // GET /api/Tickets
+        // GET /api/tickets
         [HttpGet]
-        public async Task<ActionResult<List<Ticket>>> ListarTodos() {
-            
-            // Regra: retorna a lista de todos os Tickets cadastrados no sistema
-            var Tickets = await _repo.ListarTodos();
-            
-            // Regra: se não houver Tickets cadastrados, retorna lista vazia (200 OK)
-            return Ok(Tickets);
+        public async Task<IActionResult> GetAll() {
+            var tickets = await _ticketRepository.GetAll();
+            return Ok(tickets);
         }
 
-        // GET /api/Tickets/5
+        // GET /api/tickets/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<Ticket>> BuscarPorId(int id) {
-            // Regra: se o Ticket não existir, retorna 404
-            var Ticket = await _repo.BuscarPorId(id);
+        public async Task<IActionResult> GetById(string id) {
+            var ticket = await _ticketRepository.GetById(id);
 
-            // Regra: se o Ticket existir, retorna os dados do Ticket (200 OK)
-            if (Ticket == null) {
-                return NotFound("Ticket não encontrado.");
-                
+            if (ticket == null) {
+                return NotFound("Ingresso não encontrado.");
             }
 
-            // Regra: se o Ticket existir, retorna os dados do Ticket (200 OK)
-            return Ok(Ticket);
+            return Ok(ticket);
         }
 
-        // GET /api/Tickets/Event/3  →  todos os Tickets de um Event
-        [HttpGet("Event/{EventId}")]
-        public async Task<ActionResult<List<Ticket>>> ListarPorEvent(int EventId) {
-            
-            // Verifica se o Event existe
-            var Tickets = await _repo.ListarPorEvent(EventId);
-            
-            // Regra: se o Event não existir, retorna 404
-            if (Tickets == null || Tickets.Count == 0) {
-                return NotFound("Event não encontrado ou sem Tickets.");
+        // GET /api/tickets/user/{userId}  →  todos os ingressos de um usuário
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> GetByUserId(string userId) {
+            var user = await _userRepository.GetById(userId);
+
+            if (user == null) {
+                return NotFound("Usuário não encontrado.");
             }
 
-            // Regra: se o Event existir mas não tiver Tickets, retorna lista vazia (200 OK)
-            return Ok(Tickets);
+            var tickets = await _ticketRepository.GetByUserId(userId);
+
+            return Ok(tickets);
         }
 
-        // POST /api/Tickets  →  comprar um Ticket
+        // POST /api/tickets  →  compra de um ingresso
         [HttpPost]
-        public async Task<ActionResult<Ticket>> Comprar([FromBody] Ticket Ticket) {
-            // Busca o Event no banco
-            var Event = await _db.Events.FindAsync(Ticket.EventId);
-            
-            // + ------------------------------------------- +
-            // Regras de negócio para compra de Ticket:
-            // + ------------------------------------------- +
+        public async Task<IActionResult> Purchase([FromBody] Ticket ticket) {
+            var user = await _userRepository.GetById(ticket.UserId);
 
-            // Verifica se o Event existe
-            if (Event == null) {
-                return NotFound("Event não encontrado.");
-                
+            if (user == null) {
+                return NotFound("Usuário não encontrado.");
             }
 
-            // Verifica se o Event já ocorreu
-            if (Event.Date < DateTime.Now) {
-                return BadRequest("Esse Event já ocorreu.");
-                
+            var eventTicket = await _eventTicketRepository.GetById(ticket.EventTicketId);
+
+            if (eventTicket == null) {
+                return NotFound("Lote de ingressos não encontrado.");
             }
 
-            // Verifica se o Event já está esgotado
-            if (Event.TicketsSells >= Event.Amount) {
-                return BadRequest("Event esgotado.");
-                
-            }
-            
-            // Verifica a idade mínima para o Event
-            if (Ticket.Age < Event.MinAge) {
-                return BadRequest($"Idade mínima para esse Event é {Event.MinAge} anos.");
-                
+            var ev = await _eventRepository.GetById(eventTicket.EventId);
+
+            if (ev == null) {
+                return NotFound("Evento não encontrado.");
             }
 
-            // Calcula o preço de acordo com o tipo do Ticket
-            Ticket.PriceFinal = Ticket.typeTicket switch {
-                TypeTicket.Normal => Event.PriceBase,
-                TypeTicket.Middle => Event.PriceBase * 0.5m,
-                TypeTicket.VIP => Event.PriceBase * 1.5m,
-                _ => Event.PriceBase
+            // Regra: não pode comprar ingresso para evento que já ocorreu
+            if (ev.Date < DateTime.UtcNow) {
+                return BadRequest("Este evento já ocorreu.");
+            }
+
+            // Regra: não pode comprar ingresso para evento cancelado
+            if (ev.Status == EventStatus.Cancelled) {
+                return BadRequest("Este evento foi cancelado.");
+            }
+
+            // Regra: o lote precisa estar ativo
+            if (!eventTicket.IsActive) {
+                return BadRequest("Este lote de ingressos não está disponível para venda.");
+            }
+
+            DateTime now = DateTime.UtcNow;
+
+            // Regra: as vendas do lote ainda não iniciaram
+            if (now < eventTicket.SalesStart) {
+                return BadRequest("As vendas para este lote ainda não iniciaram.");
+            }
+
+            // Regra: o período de vendas do lote encerrou
+            if (now > eventTicket.SalesEnd) {
+                return BadRequest("O período de vendas para este lote encerrou.");
+            }
+
+            // Regra: lote esgotado
+            if (eventTicket.SoldAmount >= eventTicket.TotalAmount) {
+                return BadRequest("Este lote de ingressos está esgotado.");
+            }
+
+            // Regra: usuário deve ter a idade mínima exigida pelo evento
+            int userAge = DateTime.UtcNow.Year - user.DateOfBirth.Year;
+
+            if (user.DateOfBirth.Date > DateTime.UtcNow.AddYears(-userAge)) {
+                userAge--;
+            }
+
+            if (userAge < ev.MinAge) {
+                return BadRequest($"A idade mínima para este evento é {ev.MinAge} anos.");
+            }
+
+            // Calcula o preço final com base no tipo de ingresso definido no lote
+            ticket.PriceFinal = eventTicket.Type switch {
+                TicketType.Normal    => eventTicket.Price,
+                TicketType.HalfPrice => eventTicket.Price * 0.5m,
+                TicketType.VIP       => eventTicket.Price * 1.5m,
+                _                    => eventTicket.Price
             };
 
-            // Busca a data atual para registrar a data da compra
-            Ticket.DateBuy = DateTime.Now;
+            var created = await _ticketRepository.Create(ticket);
 
-            // Salva o Ticket no banco
-            var criado = await _repo.Criar(Ticket);
+            // Atualiza o contador de vendas do lote
+            await _eventTicketRepository.IncrementSold(eventTicket.Id);
 
-            // Atualiza o contador de vendidos no Event
-            Event.TicketsSells++;
-            await _db.SaveChangesAsync();
-
-            // Retorna o Ticket criado
-            return Ok(criado);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        // DELETE /api/Tickets/5  →  cancelar um Ticket
+        // DELETE /api/tickets/{id}  →  cancelamento de ingresso
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Cancelar(int id) {
-            
-            // Busca o Ticket no banco
-            var Ticket = await _repo.BuscarPorId(id);
+        public async Task<IActionResult> Cancel(string id) {
+            var ticket = await _ticketRepository.GetById(id);
 
-            // + ------------------------------------------- +
-            // Regras de negócio para cancelamento de Ticket:
-            // + ------------------------------------------- +
-
-            // Verifica se o Ticket existe
-            if (Ticket == null) {
-                return NotFound("Ticket não encontrado.");
-                
+            if (ticket == null) {
+                return NotFound("Ingresso não encontrado.");
             }
 
-            // Verifica se o Event já ocorreu (não pode cancelar Ticket de Event já realizado)
-            if (Ticket.Event != null && Ticket.Event.Date < DateTime.Now) {
-                return BadRequest("Não é possível cancelar Ticket de Event já realizado.");
-                
+            // Regra: não pode cancelar ingresso já utilizado no evento
+            if (ticket.IsUsed) {
+                return BadRequest("Não é possível cancelar um ingresso que já foi utilizado.");
             }
 
-            // Abre uma vaga no Event
-            var Event = await _db.Events.FindAsync(Ticket.EventId);
-            if (Event != null) {
-                Event.TicketsSells--;
-                await _db.SaveChangesAsync();
+            // Regra: não pode cancelar ingresso de evento que já ocorreu
+            if (ticket.EventTicket != null) {
+                var ev = await _eventRepository.GetById(ticket.EventTicket.EventId);
+
+                if (ev != null && ev.Date < DateTime.UtcNow) {
+                    return BadRequest("Não é possível cancelar o ingresso de um evento que já ocorreu.");
+                }
             }
 
-            // Remove o Ticket do banco
-            await _repo.Deletar(id);
+            await _eventTicketRepository.DecrementSold(ticket.EventTicketId);
+            await _ticketRepository.Delete(id);
 
-            // Retorna sucesso
-            return Ok("Ticket cancelado com sucesso.");
+            return NoContent();
+        }
+
+        // POST /api/tickets/{id}/checkin  →  validação do ingresso na entrada do evento
+        [HttpPost("{id}/checkin")]
+        public async Task<IActionResult> CheckIn(string id) {
+            var ticket = await _ticketRepository.GetById(id);
+
+            if (ticket == null) {
+                return NotFound("Ingresso não encontrado.");
+            }
+
+            // Regra: ingresso já utilizado não pode ser validado novamente
+            if (ticket.IsUsed) {
+                return BadRequest("Este ingresso já foi utilizado.");
+            }
+
+            await _ticketRepository.CheckIn(id);
+
+            return Ok("Check-in realizado com sucesso.");
         }
     }
 }

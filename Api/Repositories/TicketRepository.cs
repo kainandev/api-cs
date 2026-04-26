@@ -1,48 +1,84 @@
 using Microsoft.EntityFrameworkCore;
-using ApiCs.Data;
-using ApiCs.Models;
+using Api.Data;
+using Api.Models;
 
-namespace ApiCs.Repositories {
-    // Repositório responsável pelas operações de Ticket no banco
-    public class TicketRepository {
+namespace Api.Repositories {
+    // Responsável por todas as operações de banco de dados relacionadas a Ticket
+    public class TicketRepository : ITicketRepository {
         private readonly AppDbContext _db;
 
         public TicketRepository(AppDbContext db) {
             _db = db;
         }
 
-        // Lista todos os Tickets com os dados do Event junto
-        public async Task<List<Ticket>> ListarTodos() {
-            return await _db.Tickets.Include(i => i.Event).ToListAsync();
+        // Retorna todos os ingressos com os dados do lote incluso
+        public async Task<IEnumerable<Ticket>> GetAll() {
+            return await _db.Tickets
+                .Include(t => t.EventTicket)
+                .ToListAsync();
         }
 
-        // Lista os Tickets de um Event específico
-        public async Task<List<Ticket>> ListarPorEvent(int EventId) {
-            return await _db.Tickets.Where(i => i.EventId == EventId).ToListAsync();
+        // Retorna um ingresso pelo ID com os dados do lote incluso
+        public async Task<Ticket?> GetById(string id) {
+            return await _db.Tickets
+                .Include(t => t.EventTicket)
+                .FirstOrDefaultAsync(t => t.Id == id);
         }
 
-        // Busca um Ticket pelo ID
-        public async Task<Ticket?> BuscarPorId(int id) {
-            return await _db.Tickets.Include(i => i.Event).FirstOrDefaultAsync(i => i.Id == id);
+        // Retorna todos os ingressos comprados por um usuário específico
+        public async Task<IEnumerable<Ticket>> GetByUserId(string userId) {
+            return await _db.Tickets
+                .Include(t => t.EventTicket)
+                .Where(t => t.UserId == userId)
+                .ToListAsync();
         }
 
-        // Salva um Ticket no banco
-        public async Task<Ticket> Criar(Ticket Ticket) {
-            _db.Tickets.Add(Ticket);
+        // Retorna todos os ingressos de um evento, usado para controle de entrada
+        public async Task<IEnumerable<Ticket>> GetByEventId(int eventId) {
+            return await _db.Tickets
+                .Include(t => t.EventTicket)
+                .Where(t => t.EventTicket != null && t.EventTicket.EventId == eventId)
+                .ToListAsync();
+        }
+
+        // Cria um novo ingresso (comprovante de compra) com ID gerado automaticamente
+        public async Task<Ticket> Create(Ticket ticket) {
+            ticket.Id = Guid.NewGuid().ToString();
+            ticket.PurchasedAt = DateTime.UtcNow;
+            ticket.IsUsed = false;
+
+            _db.Tickets.Add(ticket);
             await _db.SaveChangesAsync();
-            return Ticket;
+
+            return ticket;
         }
 
-        // Remove um Ticket do banco
-        public async Task<bool> Deletar(int id) {
-            var Ticket = await _db.Tickets.FindAsync(id);
-            
-            if (Ticket == null) {
+        public async Task<bool> Delete(string id) {
+            var ticket = await _db.Tickets.FindAsync(id);
+
+            if (ticket == null) {
                 return false;
             }
 
-            _db.Tickets.Remove(Ticket);
+            _db.Tickets.Remove(ticket);
             await _db.SaveChangesAsync();
+
+            return true;
+        }
+
+        // Marca o ingresso como utilizado na entrada do evento
+        public async Task<bool> CheckIn(string id) {
+            var ticket = await _db.Tickets.FindAsync(id);
+
+            if (ticket == null) {
+                return false;
+            }
+
+            ticket.IsUsed = true;
+            ticket.UsedAt = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+
             return true;
         }
     }

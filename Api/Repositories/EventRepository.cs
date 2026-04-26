@@ -1,64 +1,72 @@
 using Microsoft.EntityFrameworkCore;
-using ApiCs.Data;
-using ApiCs.Models;
+using Api.Data;
+using Api.Models;
 
-namespace ApiCs.Repositories {
-    // Repositório = responsável por todas as operações no banco relacionadas a Event
-    // O Controller chama o Repositório; o Repositório fala com o banco.
-    public class EventRepository {
+namespace Api.Repositories {
+    // Responsável por todas as operações de banco de dados relacionadas a Event
+    public class EventRepository : IEventRepository {
         private readonly AppDbContext _db;
 
         public EventRepository(AppDbContext db) {
             _db = db;
         }
 
-        // Busca todos os Events (traz os Tickets junto com JOIN automático)
-        public async Task<List<Event>> ListarTodos() {
+        // Retorna todos os eventos com seus lotes de ingressos
+        public async Task<IEnumerable<Event>> GetAll() {
             return await _db.Events
-                            .Include(e => e.Ticket)
-                            .ToListAsync();
+                .Include(e => e.EventTickets)
+                .ToListAsync();
         }
 
-        // Busca um Event pelo ID; retorna null se não existir
-        public async Task<Event?> BuscarPorId(int id) {
+        // Retorna um evento pelo ID, incluindo seus lotes de ingressos
+        public async Task<Event?> GetById(int id) {
             return await _db.Events
-                            .Include(e => e.Ticket)
-                            .FirstOrDefaultAsync(e => e.Id == id);
+                .Include(e => e.EventTickets)
+                .FirstOrDefaultAsync(e => e.Id == id);
         }
 
-        // Salva um novo Event no banco
-        public async Task<Event> Criar(Event Event) {
-            _db.Events.Add(Event);
+        // Cria um novo evento no banco com status e data de criação definidos aqui
+        public async Task<Event> Create(Event ev) {
+            ev.Status = EventStatus.Active;
+            ev.CreatedAt = DateTime.UtcNow;
+
+            _db.Events.Add(ev);
             await _db.SaveChangesAsync();
-            return Event;
+
+            return ev;
         }
 
-        // Atualiza um Event existente e salva no banco
-        public async Task<Event?> Atualizar(int id, Event dadosNovos) {
-            var Event = await _db.Events.FindAsync(id);
-            if (Event == null) return null;
+        // Atualiza os dados editáveis de um evento existente
+        public async Task<Event?> Update(int id, Event updatedData) {
+            var ev = await _db.Events.FindAsync(id);
 
-            Event.Name = dadosNovos.Name;
-            Event.Address = dadosNovos.Address;
-            Event.Date = dadosNovos.Date;
-            Event.PriceBase = dadosNovos.PriceBase;
-            Event.Amount = dadosNovos.Amount;
-            Event.MinAge = dadosNovos.MinAge;
+            if (ev == null) {
+                return null;
+            }
+
+            ev.Name = updatedData.Name;
+            ev.Address = updatedData.Address;
+            ev.Description = updatedData.Description;
+            ev.Date = updatedData.Date;
+            ev.MinAge = updatedData.MinAge;
+            ev.Status = updatedData.Status;
 
             await _db.SaveChangesAsync();
-            return Event;
+
+            return ev;
         }
 
-        // Remove um Event do banco
-        public async Task<bool> Deletar(int id) {
-            var Event = await _db.Events.FindAsync(id);
-            
-            if (Event == null) {
+        // Remove um evento permanentemente do banco
+        public async Task<bool> Delete(int id) {
+            var ev = await _db.Events.FindAsync(id);
+
+            if (ev == null) {
                 return false;
             }
 
-            _db.Events.Remove(Event);
+            _db.Events.Remove(ev);
             await _db.SaveChangesAsync();
+
             return true;
         }
     }

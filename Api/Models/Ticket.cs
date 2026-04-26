@@ -1,22 +1,20 @@
-namespace ApiCs.Models {
-    // Tabela "Tickets" no banco de dados
-
+namespace Api.Models {
+    // Representa o comprovante de compra de um ingresso por um usuário.
+    // Um Ticket é gerado quando um usuário compra a partir de um EventTicket (lote).
     public class Ticket {
-        public int Id { get; set; }
-
-        // Chave estrangeira: a qual User esse Ticket pertence       
-        public string UserId { get; set; }
-        public User? User { get; set; }
-
-        // Tipo de ingresso: Normal, meia e VIP.
-        public TypeTicket typeTicket { get; set; } = TypeTicket.Normal;
+        public string Id { get; set; } = "";
         public decimal PriceFinal { get; set; }
+        public DateTime PurchasedAt { get; set; } = DateTime.UtcNow;
+        public bool IsUsed { get; set; } = false;
+        public DateTime? UsedAt { get; set; }
 
-        // Data da ciompra do ingresso.
-        public DateTime DateBuy { get; set; } = DateTime.Now;
+        // Chave estrangeira: usuário que realizou a compra
+        public string UserId { get; set; } = "";
 
-        // Chave estrangeira: a qual Event esse Ticket pertence
-        public int EventId { get; set; }
-        public Event? Event { get; set; }
+        // Chave estrangeira: lote do qual este ingresso foi comprado
+        public int EventTicketId { get; set; }
+
+        // Dados do lote carregados para exibição (via Include no repositório)
+        public EventTicket? EventTicket { get; set; }
     }
 }
