@@ -13,8 +13,5 @@ namespace ApiCs.Models {
 
         // Calculado na hora, não salvo no banco
         public int RestAmount => Amount - TicketsSells;
-
-        // Um Event tem vários Tickets (relação 1:N)
-        public List<Ticket> Ticket { get; set; } = new();
     }
 }
