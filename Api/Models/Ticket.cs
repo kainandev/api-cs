@@ -3,8 +3,8 @@ namespace ApiCs.Models {
 
     public class Ticket {
         public int Id { get; set; }
-        public User User { get; set; }
-        public string CPF { get; set; } = "";
+        public string? UserId { get; set; }
+        public User? User { get; set; }
         public int Age { get; set; }
         public TypeTicket typeTicket { get; set; } = TypeTicket.Normal;
         public decimal PriceFinal { get; set; }
@@ -12,6 +12,6 @@ namespace ApiCs.Models {
 
         // Chave estrangeira: a qual Event esse Ticket pertence
         public int EventId { get; set; }
-        public Event Event { get; set; }
+        public Event? Event { get; set; }
     }
 }

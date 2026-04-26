@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ApiCs.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260426025020_initial")]
+    [Migration("20260426034339_initial")]
     partial class initial
     {
         /// <inheritdoc />
@@ -62,10 +62,6 @@ namespace ApiCs.Migrations
 
                     b.Property<int>("Age")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("CPF")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DateBuy")
                         .HasColumnType("TEXT");

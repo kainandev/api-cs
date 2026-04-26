@@ -53,7 +53,6 @@ namespace ApiCs.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     UserId = table.Column<string>(type: "TEXT", nullable: true),
-                    CPF = table.Column<string>(type: "TEXT", nullable: false),
                     Age = table.Column<int>(type: "INTEGER", nullable: false),
                     typeTicket = table.Column<int>(type: "INTEGER", nullable: false),
                     PriceFinal = table.Column<decimal>(type: "decimal(10,2)", nullable: false),

@@ -60,10 +60,6 @@ namespace ApiCs.Migrations
                     b.Property<int>("Age")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("CPF")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime>("DateBuy")
                         .HasColumnType("TEXT");
 
