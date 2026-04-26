@@ -10,17 +10,17 @@ namespace ApiCs.Repositories {
             _context = context;
         }
 
-        public async Task<IEnumerable<Users>> GetAll() {
+        public async Task<IEnumerable<User>> GetAll() {
             return await _context.Users
                 .Where(u => u.Status != Status.Deleted)
                 .ToListAsync();
         }
 
-        public async Task<Users?> GetById(string id) {
+        public async Task<User?> GetById(string id) {
             return await _context.Users.FirstOrDefaultAsync(u => u.Id == id && u.Status != Status.Deleted);
         }
 
-        public async Task<Users> Create(Users user) {
+        public async Task<User> Create(User user) {
             user.Id = Guid.NewGuid().ToString();
             user.Status = Status.Active;
             user.CreatedAt = DateTime.UtcNow;
@@ -31,21 +31,21 @@ namespace ApiCs.Repositories {
             return user;
         }
 
-        public async Task<Users?> Update(string id, Users updated) {
+        public async Task<User?> Update(string id, User updated) {
             var user = await GetById(id);
 
             if (user is null) return null;
 
-            user.Firstname = updated.Firstname;
-            user.Lastname  = updated.Lastname;
-            user.Cpf = updated.Cpf;
+            user.FirstName = updated.FirstName;
+            user.LastName  = updated.LastName;
+            user.CPF = updated.CPF;
 
             await _context.SaveChangesAsync();
 
             return user;
         }
 
-        public async Task<bool> DeleteAsync(string id) {
+        public async Task<bool> Delete(string id) {
             var user = await GetById(id);
 
             if (user is null) return false;

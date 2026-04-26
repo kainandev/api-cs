@@ -4,7 +4,7 @@ using ApiCs.Repositories;
 
 namespace ApiCs.Controllers {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/user")]
     public class UsersController : ControllerBase {
         private readonly IUsersRepository _repository;
 
@@ -30,13 +30,13 @@ namespace ApiCs.Controllers {
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Users user) {
+        public async Task<IActionResult> Create([FromBody] User user) {
             var created = await _repository.Create(user);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] Users user) {
+        public async Task<IActionResult> Update(string id, [FromBody] User user) {
             var updated = await _repository.Update(id, user);
 
             if (updated is null) {

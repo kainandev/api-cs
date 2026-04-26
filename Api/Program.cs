@@ -10,8 +10,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 // Registra os repositórios para injeção de dependência
-builder.Services.AddScoped<EventoRepository>();
-builder.Services.AddScoped<IngressoRepository>();
+builder.Services.AddScoped<EventRepository>();
+builder.Services.AddScoped<TicketRepository>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

@@ -1,18 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
+    <!--
+      TargetFramework: which .NET version to use.
+      Change to net10.0 once you install the .NET 10 SDK.
+    -->
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>disable</Nullable>
+    <!-- Nullable: forces you to be explicit about null values — prevents a lot of bugs -->
+    <Nullable>enable</Nullable>
+    <!-- ImplicitUsings: auto-imports common namespaces like System, Collections, etc. -->
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Entity Framework Core com suporte a SQLite -->
+    <!-- EF Core: ORM that maps C# classes to database tables -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0" />
-
-    <!-- Swagger para documentação e testes da API -->
+    <!-- Swagger: auto-generates interactive API documentation -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 

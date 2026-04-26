@@ -2,10 +2,10 @@ using ApiCs.Models;
 
 namespace ApiCs.Repositories {
     public interface IUsersRepository {
-        Task<IEnumerable<Users>> GetAll();
-        Task<Users?> GetById(string id);
-        Task<Users> Create(Users user);
-        Task<Users?> Update(string id, Users user);
+        Task<IEnumerable<User>> GetAll();
+        Task<User?> GetById(string id);
+        Task<User> Create(User user);
+        Task<User?> Update(string id, User user);
         Task<bool> Delete(string id);
     }
 }
