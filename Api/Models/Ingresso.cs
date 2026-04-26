@@ -1,4 +1,4 @@
-namespace IngressosAPI.Models {
+namespace ApiCs.Models {
     // Tabela "Ingressos" no banco de dados
 
     public class Ingresso {

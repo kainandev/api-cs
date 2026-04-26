@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using IngressosAPI.Data;
-using IngressosAPI.Repositories;
+using ApiCs.Data;
+using ApiCs.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 

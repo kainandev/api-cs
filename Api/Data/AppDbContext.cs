@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using IngressosAPI.Models;
+using ApiCs.Models;
 
-namespace IngressosAPI.Data
+namespace ApiCs.Data
 {
     // DbContext = ponte entre o C# e o banco de dados
     public class AppDbContext : DbContext
@@ -11,6 +11,7 @@ namespace IngressosAPI.Data
         // Cada DbSet vira uma tabela no banco
         public DbSet<Evento> Eventos { get; set; }
         public DbSet<Ingresso> Ingressos { get; set; }
+        public DbSet<Users> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -26,6 +27,11 @@ namespace IngressosAPI.Data
             // VagasRestantes é calculada em código, não existe no banco
             modelBuilder.Entity<Evento>()
                 .Ignore(e => e.VagasRestantes);
+
+            modelBuilder.Entity<Users>()
+                .Property(u => u.Status)
+                .HasConversion<string>()
+                .HasDefaultValue(Status.Active);
         }
     }
 }

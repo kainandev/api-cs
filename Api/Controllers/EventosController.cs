@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using IngressosAPI.Models;
-using IngressosAPI.Repositories;
+using ApiCs.Models;
+using ApiCs.Repositories;
 
 namespace IngressosAPI.Controllers {
     [ApiController]

@@ -1,5 +1,4 @@
-namespace IngressosAPI.Models
-{
+namespace ApiCs.Models {
     // Enum = lista fixa de opções possíveis
     public enum TipoIngresso {
         Normal = 0,  // preço cheio

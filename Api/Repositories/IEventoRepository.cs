@@ -1,12 +1,10 @@
-using IngressosAPI.Models;
+using ApiCs.Models;
 
-namespace IngressosAPI.Repositories
-{
+namespace ApiCs.Repositories {
     // Interface define o "contrato" do repositório
     // Ou seja, quais métodos qualquer repositório de Evento DEVE ter
     // Isso separa a lógica da aplicação do acesso ao banco
-    public interface IEventoRepository
-    {
+    public interface IEventoRepository {
         Task<List<Evento>> ListarTodos();
         Task<Evento?> BuscarPorId(int id);
         Task<Evento> Criar(Evento evento);
