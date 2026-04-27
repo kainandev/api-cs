@@ -9,7 +9,7 @@ namespace Api.Models {
         public string Description { get; set; } = "";  //sobre o evento
         public DateTime Date { get; set; }  //data e horário
         public int MinAge { get; set; } = 0;  //restirngir para menores de x anos.
-        public EventStatus Status { get; set; } = EventStatus.Active;  //Se o evento está ativo, para que um evento com data no passado não ocorra no futuro
+        public EventStatus Status { get; set; } = EventStatus.Active;  // puxa do EventStatus.cs Se o evento está ativo, para que um evento com data no passado não ocorra no futuro
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;  //Data de criação/registro
 
         // Chave estrangeira: usuário que criou o evento
