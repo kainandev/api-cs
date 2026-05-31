@@ -1,0 +1,427 @@
+.event-details-container {
+  min-height: calc(100svh - 70px);
+  background-color: var(--bg);
+}
+
+/* Event Hero */
+.event-hero {
+  padding: 80px 40px;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: white;
+}
+
+.event-hero-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.event-detail-date {
+  font-size: 16px;
+  font-weight: 700;
+  color: #c084fc;
+  display: block;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.event-detail-title {
+  font-size: 48px;
+  font-weight: 800;
+  margin: 0 0 16px;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.event-detail-address {
+  font-size: 18px;
+  margin: 0 0 24px;
+  opacity: 0.9;
+}
+
+.event-detail-badges {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.age-detail-badge {
+  background-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.status-detail-badge {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-detail-badge.cancelled {
+  background-color: #ef4444;
+  color: white;
+}
+
+.status-detail-badge.expired {
+  background-color: #4b5563;
+  color: white;
+}
+
+/* Event Grid Layout */
+.event-details-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 40px;
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 40px;
+  box-sizing: border-box;
+}
+
+.event-info-col, .event-tickets-col {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.info-card, .purchase-card, .purchase-success-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.info-card h2, .purchase-card h2, .purchase-success-card h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: var(--text-h);
+  letter-spacing: -0.5px;
+}
+
+.event-description {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+/* Purchase Card */
+.event-status-warning {
+  background-color: rgba(239, 68, 68, 0.05);
+  border: 1px dashed rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.purchase-error-msg {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  font-size: 14px;
+}
+
+.batches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.batch-option {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.batch-option input[type="radio"] {
+  margin-right: 14px;
+  accent-color: #7c3aed;
+  width: 18px;
+  height: 18px;
+}
+
+.batch-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.batch-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.batch-type {
+  font-weight: 500;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.batch-spots {
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 4px;
+}
+
+.batch-price {
+  font-size: 16px;
+  color: #7c3aed;
+  text-align: right;
+}
+
+.disabled-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background-color: var(--border);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.batch-option.active {
+  border-color: #7c3aed;
+  background-color: rgba(124, 58, 237, 0.04);
+}
+
+.batch-option.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Buyer info & Purchase Actions */
+.buyer-info {
+  background-color: var(--code-bg);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 18px;
+}
+
+.buyer-info p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.buyer-sub {
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 4px !important;
+}
+
+.btn-confirm-purchase {
+  width: 100%;
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+  transition: all 0.2s ease;
+  margin-top: 16px;
+}
+
+.btn-confirm-purchase:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+}
+
+.btn-confirm-purchase:disabled {
+  background: var(--border);
+  color: var(--text);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.purchase-auth-prompt {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.purchase-auth-prompt p {
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.btn-auth-trigger {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 10px rgba(124, 58, 237, 0.2);
+}
+
+.btn-auth-trigger:hover {
+  transform: translateY(-1px);
+}
+
+/* Success Card */
+.purchase-success-card {
+  text-align: center;
+}
+
+.success-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 20px;
+}
+
+.success-subtitle {
+  color: var(--text);
+  margin-bottom: 24px;
+}
+
+.ticket-summary {
+  background-color: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.ticket-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 14px;
+}
+
+.ticket-row:last-child {
+  border-bottom: none;
+}
+
+.ticket-code {
+  font-family: var(--mono);
+  background-color: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-h);
+}
+
+.ticket-price {
+  color: #10b981;
+  font-size: 16px;
+}
+
+.success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-view-my-tickets {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  color: white;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  display: block;
+  text-align: center;
+}
+
+.btn-buy-more {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-h);
+  padding: 10px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-buy-more:hover {
+  background-color: var(--border);
+}
+
+/* Loading & Error States */
+.event-details-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100svh - 70px);
+}
+
+.event-details-error {
+  text-align: center;
+  padding: 80px 20px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.btn-back {
+  display: inline-block;
+  background-color: #7c3aed;
+  color: white;
+  text-decoration: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  margin-top: 20px;
+}
+
+@media (max-width: 1024px) {
+  .event-details-grid {
+    grid-template-columns: 1fr;
+    padding: 0 20px;
+  }
+  .event-hero {
+    padding: 60px 20px;
+  }
+  .event-detail-title {
+    font-size: 36px;
+  }
+}

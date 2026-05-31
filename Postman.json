@@ -1,0 +1,796 @@
+{
+  "info": {
+    "name": "Ticket Platform API",
+    "description": "Documentação completa da API de venda de ingressos.\n\n**Fluxo de uso:**\n1. Crie um usuário em POST /api/users\n2. Crie um evento em POST /api/events\n3. Crie lotes de ingressos em POST /api/event-tickets\n4. Compre ingressos em POST /api/tickets\n5. Faça check-in em POST /api/tickets/:id/checkin\n6. Consulte relatórios em GET /api/events/:id/summary",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5142",
+      "type": "string",
+      "description": "URL base da API. Altere se rodar em outra porta."
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente após criar um usuário."
+    },
+    {
+      "key": "eventId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente após criar um evento."
+    },
+    {
+      "key": "eventTicketId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente após criar um lote."
+    },
+    {
+      "key": "ticketId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente após comprar um ingresso."
+    }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "description": "Gerenciamento de usuários da plataforma.",
+      "item": [
+        {
+          "name": "Listar todos os usuários",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            },
+            "description": "Retorna todos os usuários com status Active ou Disabled. Usuários com status Deleted não aparecem (soft delete)."
+          },
+          "response": [
+            {
+              "name": "200 OK - Lista de usuários",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"firstName\": \"João\",\n    \"lastName\": \"Silva\",\n    \"cpf\": \"123.456.789-00\",\n    \"email\": \"joao@email.com\",\n    \"dateOfBirth\": \"2000-05-15T00:00:00\",\n    \"status\": \"Active\",\n    \"createdAt\": \"2024-01-01T10:00:00\",\n    \"tickets\": []\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Buscar usuário por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}"]
+            },
+            "description": "Retorna um único usuário pelo ID. Retorna 404 se não existir ou estiver deletado."
+          },
+          "response": [
+            {
+              "name": "200 OK - Usuário encontrado",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"firstName\": \"João\",\n  \"lastName\": \"Silva\",\n  \"cpf\": \"123.456.789-00\",\n  \"email\": \"joao@email.com\",\n  \"dateOfBirth\": \"2000-05-15T00:00:00\",\n  \"status\": \"Active\",\n  \"createdAt\": \"2024-01-01T10:00:00\",\n  \"tickets\": []\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Usuário não encontrado.\""
+            }
+          ]
+        },
+        {
+          "name": "Criar usuário",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('userId', body.id);",
+                  "  console.log('userId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"João\",\n  \"lastName\": \"Silva\",\n  \"cpf\": \"123.456.789-00\",\n  \"email\": \"joao@email.com\",\n  \"dateOfBirth\": \"2000-05-15T00:00:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            },
+            "description": "Cria um novo usuário. O ID é gerado automaticamente (UUID). O script de teste salva o ID na variável {{userId}} automaticamente.\n\n**Campos obrigatórios:** cpf, email\n\n**Regras:**\n- CPF não pode ser vazio\n- E-mail não pode ser vazio\n- Status começa como Active automaticamente"
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"firstName\": \"João\",\n  \"lastName\": \"Silva\",\n  \"cpf\": \"123.456.789-00\",\n  \"email\": \"joao@email.com\",\n  \"dateOfBirth\": \"2000-05-15T00:00:00\",\n  \"status\": \"Active\",\n  \"createdAt\": \"2024-01-01T10:00:00\",\n  \"tickets\": []\n}"
+            },
+            {
+              "name": "400 Bad Request - CPF vazio",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"O CPF é obrigatório.\""
+            }
+          ]
+        },
+        {
+          "name": "Atualizar usuário",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"João\",\n  \"lastName\": \"Oliveira\",\n  \"cpf\": \"123.456.789-00\",\n  \"email\": \"joao.novo@email.com\",\n  \"dateOfBirth\": \"2000-05-15T00:00:00\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}"]
+            },
+            "description": "Atualiza os dados editáveis de um usuário. O status e a data de criação não são alterados por este endpoint."
+          },
+          "response": [
+            {
+              "name": "200 OK - Usuário atualizado",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"firstName\": \"João\",\n  \"lastName\": \"Oliveira\",\n  \"cpf\": \"123.456.789-00\",\n  \"email\": \"joao.novo@email.com\",\n  \"dateOfBirth\": \"2000-05-15T00:00:00\",\n  \"status\": \"Active\",\n  \"createdAt\": \"2024-01-01T10:00:00\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Usuário não encontrado.\""
+            }
+          ]
+        },
+        {
+          "name": "Deletar usuário",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}"]
+            },
+            "description": "Soft delete: marca o usuário como Deleted, mas não remove do banco. O usuário deixa de aparecer em qualquer consulta.\n\nRetorna 204 No Content em caso de sucesso (sem corpo na resposta)."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "status": "No Content",
+              "code": 204,
+              "header": [],
+              "body": ""
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Usuário não encontrado.\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "description": "Gerenciamento de eventos da plataforma.",
+      "item": [
+        {
+          "name": "Listar todos os eventos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events"]
+            },
+            "description": "Retorna todos os eventos cadastrados, incluindo os lotes de ingressos (EventTickets) de cada um."
+          },
+          "response": [
+            {
+              "name": "200 OK - Lista de eventos",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Festival de Verão\",\n    \"address\": \"Rua das Flores, 100 - São Paulo, SP\",\n    \"description\": \"O maior festival de música do verão.\",\n    \"date\": \"2025-12-20T20:00:00\",\n    \"minAge\": 18,\n    \"status\": \"Active\",\n    \"ownerId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"createdAt\": \"2024-01-01T10:00:00\",\n    \"eventTickets\": []\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Buscar evento por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "{{eventId}}"]
+            },
+            "description": "Retorna um único evento com todos os seus lotes de ingressos."
+          },
+          "response": [
+            {
+              "name": "200 OK - Evento encontrado",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Festival de Verão\",\n  \"address\": \"Rua das Flores, 100 - São Paulo, SP\",\n  \"description\": \"O maior festival de música do verão.\",\n  \"date\": \"2025-12-20T20:00:00\",\n  \"minAge\": 18,\n  \"status\": \"Active\",\n  \"ownerId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"createdAt\": \"2024-01-01T10:00:00\",\n  \"eventTickets\": []\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Evento não encontrado.\""
+            }
+          ]
+        },
+        {
+          "name": "Criar evento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('eventId', body.id);",
+                  "  console.log('eventId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Festival de Verão\",\n  \"address\": \"Rua das Flores, 100 - São Paulo, SP\",\n  \"description\": \"O maior festival de música do verão.\",\n  \"date\": \"2025-12-20T20:00:00\",\n  \"minAge\": 18,\n  \"ownerId\": \"{{userId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events"]
+            },
+            "description": "Cria um novo evento. O script de teste salva o ID na variável {{eventId}} automaticamente.\n\n**Regras:**\n- A data não pode ser no passado\n- O nome não pode ser vazio\n- O status começa como Active\n\n**minAge:** idade mínima para compra. Use 0 para eventos sem restrição."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Festival de Verão\",\n  \"address\": \"Rua das Flores, 100 - São Paulo, SP\",\n  \"description\": \"O maior festival de música do verão.\",\n  \"date\": \"2025-12-20T20:00:00\",\n  \"minAge\": 18,\n  \"status\": \"Active\",\n  \"ownerId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"createdAt\": \"2024-01-10T14:00:00\",\n  \"eventTickets\": []\n}"
+            },
+            {
+              "name": "400 Bad Request - Data no passado",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"A data do evento não pode ser no passado.\""
+            }
+          ]
+        },
+        {
+          "name": "Atualizar evento",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Festival de Verão 2025\",\n  \"address\": \"Av. Paulista, 900 - São Paulo, SP\",\n  \"description\": \"Edição especial do festival.\",\n  \"date\": \"2025-12-21T21:00:00\",\n  \"minAge\": 16,\n  \"status\": \"Active\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "{{eventId}}"]
+            },
+            "description": "Atualiza os dados de um evento existente.\n\n**status aceitos:** Active, Cancelled, Finished\n\n**Regras:**\n- A nova data não pode ser no passado"
+          },
+          "response": [
+            {
+              "name": "200 OK - Evento atualizado",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Festival de Verão 2025\",\n  \"address\": \"Av. Paulista, 900 - São Paulo, SP\",\n  \"date\": \"2025-12-21T21:00:00\",\n  \"minAge\": 16,\n  \"status\": \"Active\"\n}"
+            },
+            {
+              "name": "400 Bad Request - Data no passado",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"A nova data do evento não pode ser no passado.\""
+            }
+          ]
+        },
+        {
+          "name": "Deletar evento",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "{{eventId}}"]
+            },
+            "description": "Remove um evento permanentemente do banco.\n\n**Regra:** Não é possível excluir um evento se qualquer um dos seus lotes tiver ingressos vendidos.\n\nRetorna 204 No Content em caso de sucesso."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "status": "No Content",
+              "code": 204,
+              "header": [],
+              "body": ""
+            },
+            {
+              "name": "400 Bad Request - Ingressos vendidos",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Não é possível excluir um evento que possui ingressos vendidos.\""
+            }
+          ]
+        },
+        {
+          "name": "Resumo financeiro do evento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/{{eventId}}/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "{{eventId}}", "summary"]
+            },
+            "description": "Retorna um relatório financeiro completo do evento, com receita total, ticket médio e situação de cada lote."
+          },
+          "response": [
+            {
+              "name": "200 OK - Resumo financeiro",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"eventName\": \"Festival de Verão\",\n  \"eventDate\": \"2025-12-20T20:00:00\",\n  \"totalCapacity\": 500,\n  \"totalSold\": 120,\n  \"remainingSpots\": 380,\n  \"totalRevenue\": 18000.00,\n  \"averageTicketPrice\": 150.00,\n  \"batches\": [\n    {\n      \"batchName\": \"Pré-venda\",\n      \"type\": \"Normal\",\n      \"price\": 100.00,\n      \"sold\": 100,\n      \"available\": 0,\n      \"isActive\": false\n    },\n    {\n      \"batchName\": \"1° Lote\",\n      \"type\": \"Normal\",\n      \"price\": 200.00,\n      \"sold\": 20,\n      \"available\": 80,\n      \"isActive\": true\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Lista de participantes (controle de entrada)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/events/{{eventId}}/attendees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "events", "{{eventId}}", "attendees"]
+            },
+            "description": "Retorna a lista completa de quem comprou ingresso para o evento. Inclui status de check-in de cada ingresso. Ideal para controle na entrada do evento."
+          },
+          "response": [
+            {
+              "name": "200 OK - Lista de participantes",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"ticketId\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n    \"userId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"batchName\": \"Pré-venda\",\n    \"ticketType\": \"Normal\",\n    \"pricePaid\": 100.00,\n    \"purchasedAt\": \"2024-10-01T14:30:00\",\n    \"checkedIn\": true,\n    \"checkedInAt\": \"2025-12-20T20:05:00\"\n  }\n]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Event Tickets (Lotes)",
+      "description": "Gerenciamento dos lotes de ingressos criados pelo organizador.\n\nCada lote representa uma categoria de venda: Pré-venda, 1° Lote, Pista VIP, etc. O organizador define o preço, a quantidade e o período de vendas de cada lote de forma independente.",
+      "item": [
+        {
+          "name": "Listar todos os lotes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/event-tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "event-tickets"]
+            },
+            "description": "Retorna todos os lotes de ingressos cadastrados na plataforma."
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar lote por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/event-tickets/{{eventTicketId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "event-tickets", "{{eventTicketId}}"]
+            },
+            "description": "Retorna um lote específico pelo ID."
+          },
+          "response": [
+            {
+              "name": "200 OK - Lote encontrado",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Pré-venda\",\n  \"description\": \"Ingressos com preço reduzido para compra antecipada.\",\n  \"type\": \"Normal\",\n  \"price\": 100.00,\n  \"totalAmount\": 200,\n  \"soldAmount\": 150,\n  \"availableAmount\": 50,\n  \"salesStart\": \"2024-10-01T00:00:00\",\n  \"salesEnd\": \"2024-11-30T23:59:59\",\n  \"isActive\": true,\n  \"eventId\": 1,\n  \"createdAt\": \"2024-09-15T10:00:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Listar lotes de um evento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/event-tickets/event/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "event-tickets", "event", "{{eventId}}"]
+            },
+            "description": "Retorna todos os lotes de ingressos de um evento específico."
+          },
+          "response": []
+        },
+        {
+          "name": "Criar lote de ingressos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('eventTicketId', body.id);",
+                  "  console.log('eventTicketId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pré-venda\",\n  \"description\": \"Ingressos com preço reduzido para compra antecipada.\",\n  \"type\": 0,\n  \"price\": 100.00,\n  \"totalAmount\": 200,\n  \"salesStart\": \"2024-10-01T00:00:00\",\n  \"salesEnd\": \"2024-11-30T23:59:59\",\n  \"isActive\": true,\n  \"eventId\": {{eventId}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/event-tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "event-tickets"]
+            },
+            "description": "Cria um novo lote de ingressos para um evento. O script de teste salva o ID na variável {{eventTicketId}}.\n\n**Tipos de ingresso (type):**\n- `0` = Normal (preço cheio)\n- `1` = HalfPrice (meia entrada — 50% do preço)\n- `2` = VIP (50% mais caro que o preço base)\n\nO desconto ou acréscimo é calculado automaticamente no momento da compra.\n\n**Regras:**\n- O evento deve existir e estar Active\n- O preço não pode ser negativo\n- O totalAmount deve ser maior que zero\n- salesStart deve ser anterior ao salesEnd"
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Pré-venda\",\n  \"description\": \"Ingressos com preço reduzido para compra antecipada.\",\n  \"type\": 0,\n  \"price\": 100.00,\n  \"totalAmount\": 200,\n  \"soldAmount\": 0,\n  \"availableAmount\": 200,\n  \"salesStart\": \"2024-10-01T00:00:00\",\n  \"salesEnd\": \"2024-11-30T23:59:59\",\n  \"isActive\": true,\n  \"eventId\": 1,\n  \"createdAt\": \"2024-09-15T10:00:00\"\n}"
+            },
+            {
+              "name": "400 Bad Request - Evento inativo",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Não é possível criar lotes para um evento inativo.\""
+            },
+            {
+              "name": "400 Bad Request - Datas inválidas",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"A data de início das vendas deve ser anterior à data de encerramento.\""
+            }
+          ]
+        },
+        {
+          "name": "Atualizar lote",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pré-venda - Encerrada\",\n  \"description\": \"Lote encerrado.\",\n  \"type\": 0,\n  \"price\": 100.00,\n  \"totalAmount\": 200,\n  \"salesStart\": \"2024-10-01T00:00:00\",\n  \"salesEnd\": \"2024-11-30T23:59:59\",\n  \"isActive\": false\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/event-tickets/{{eventTicketId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "event-tickets", "{{eventTicketId}}"]
+            },
+            "description": "Atualiza os dados de um lote existente.\n\n**Regras:**\n- O totalAmount não pode ser menor que o soldAmount atual (não se pode reduzir abaixo do que já foi vendido)\n- O preço não pode ser negativo\n\nPara encerrar um lote sem deletá-lo, defina `isActive: false`."
+          },
+          "response": [
+            {
+              "name": "200 OK - Lote atualizado",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Pré-venda - Encerrada\",\n  \"isActive\": false\n}"
+            },
+            {
+              "name": "400 Bad Request - Capacidade abaixo do vendido",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"A capacidade não pode ser menor que os ingressos já vendidos (150).\""
+            }
+          ]
+        },
+        {
+          "name": "Deletar lote",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/event-tickets/{{eventTicketId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "event-tickets", "{{eventTicketId}}"]
+            },
+            "description": "Remove um lote de ingressos permanentemente.\n\n**Regra:** Não é possível excluir um lote que já tenha ingressos vendidos. Nesse caso, use `isActive: false` para desativá-lo.\n\nRetorna 204 No Content em caso de sucesso."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "status": "No Content",
+              "code": 204,
+              "header": [],
+              "body": ""
+            },
+            {
+              "name": "400 Bad Request - Já tem vendas",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Não é possível excluir um lote que já possui ingressos vendidos.\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tickets (Comprovantes)",
+      "description": "Compra, cancelamento e check-in de ingressos.\n\nUm Ticket é o comprovante gerado quando um usuário compra a partir de um lote (EventTicket). O preço final é calculado automaticamente com base no tipo do lote.",
+      "item": [
+        {
+          "name": "Listar todos os ingressos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tickets"]
+            },
+            "description": "Retorna todos os ingressos comprados na plataforma, incluindo os dados do lote de origem."
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar ingresso por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets/{{ticketId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tickets", "{{ticketId}}"]
+            },
+            "description": "Retorna um ingresso específico pelo ID (UUID). Inclui os dados do lote de origem."
+          },
+          "response": [
+            {
+              "name": "200 OK - Ingresso encontrado",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n  \"priceFinal\": 100.00,\n  \"purchasedAt\": \"2024-10-15T14:30:00\",\n  \"isUsed\": false,\n  \"usedAt\": null,\n  \"userId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"eventTicketId\": 1,\n  \"eventTicket\": {\n    \"id\": 1,\n    \"name\": \"Pré-venda\",\n    \"type\": 0,\n    \"price\": 100.00,\n    \"eventId\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Listar ingressos de um usuário",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets/user/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tickets", "user", "{{userId}}"]
+            },
+            "description": "Retorna todos os ingressos comprados por um usuário específico. Útil para exibir o histórico de compras do usuário."
+          },
+          "response": []
+        },
+        {
+          "name": "Comprar ingresso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('ticketId', body.id);",
+                  "  console.log('ticketId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"eventTicketId\": {{eventTicketId}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tickets"]
+            },
+            "description": "Realiza a compra de um ingresso. O script de teste salva o ID na variável {{ticketId}}.\n\n**O preço final é calculado automaticamente:**\n- Lote Normal → preço cheio\n- Lote HalfPrice → 50% do preço\n- Lote VIP → 150% do preço\n\n**Regras validadas na compra:**\n- Usuário deve existir\n- Lote deve existir e estar ativo (isActive: true)\n- O evento não pode ter ocorrido\n- O evento não pode estar Cancelled\n- O período de vendas do lote deve estar ativo (salesStart ≤ agora ≤ salesEnd)\n- O lote não pode estar esgotado (soldAmount < totalAmount)\n- O usuário deve ter a idade mínima exigida pelo evento"
+          },
+          "response": [
+            {
+              "name": "201 Created - Ingresso comprado",
+              "status": "Created",
+              "code": 201,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n  \"priceFinal\": 100.00,\n  \"purchasedAt\": \"2024-10-15T14:30:00\",\n  \"isUsed\": false,\n  \"usedAt\": null,\n  \"userId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"eventTicketId\": 1\n}"
+            },
+            {
+              "name": "400 Bad Request - Lote esgotado",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Este lote de ingressos está esgotado.\""
+            },
+            {
+              "name": "400 Bad Request - Fora do período de vendas",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"O período de vendas para este lote encerrou.\""
+            },
+            {
+              "name": "400 Bad Request - Idade mínima",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"A idade mínima para este evento é 18 anos.\""
+            },
+            {
+              "name": "400 Bad Request - Evento já ocorreu",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Este evento já ocorreu.\""
+            }
+          ]
+        },
+        {
+          "name": "Cancelar ingresso",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets/{{ticketId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tickets", "{{ticketId}}"]
+            },
+            "description": "Cancela e remove um ingresso. Devolve a vaga ao lote automaticamente.\n\n**Regras:**\n- Não pode cancelar ingresso já utilizado no check-in\n- Não pode cancelar ingresso de evento que já ocorreu\n\nRetorna 204 No Content em caso de sucesso."
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "status": "No Content",
+              "code": 204,
+              "header": [],
+              "body": ""
+            },
+            {
+              "name": "400 Bad Request - Ingresso já usado",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Não é possível cancelar um ingresso que já foi utilizado.\""
+            },
+            {
+              "name": "400 Bad Request - Evento já ocorreu",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Não é possível cancelar o ingresso de um evento que já ocorreu.\""
+            }
+          ]
+        },
+        {
+          "name": "Check-in (validar entrada)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tickets/{{ticketId}}/checkin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tickets", "{{ticketId}}", "checkin"]
+            },
+            "description": "Valida o ingresso na entrada do evento. Marca o ingresso como utilizado (isUsed: true) e registra o horário.\n\n**Regra:** Um ingresso já validado não pode ser validado novamente.\n\nIdeal para uso pelo staff de entrada consultando GET /api/events/:id/attendees para ver a lista e então chamar este endpoint para dar baixa."
+          },
+          "response": [
+            {
+              "name": "200 OK - Check-in realizado",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Check-in realizado com sucesso.\""
+            },
+            {
+              "name": "400 Bad Request - Já utilizado",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Este ingresso já foi utilizado.\""
+            },
+            {
+              "name": "404 Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "\"Ingresso não encontrado.\""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
