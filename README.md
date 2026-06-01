@@ -1,4 +1,4 @@
-# Api em C#
+# Api em C# Lívia e Kainan
 
 ### Para inciar o desenvolvimento da API é necessário criar o banco de dados, para isso utilize o comando:
 
