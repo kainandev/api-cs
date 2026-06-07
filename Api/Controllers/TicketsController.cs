@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Api.Models;
 using Api.Repositories;
 
 namespace Api.Controllers {
+    [Authorize]
     [ApiController]
     [Route("api/tickets")]
     public class TicketsController : ControllerBase {

@@ -1,22 +1,3 @@
-/**
- * header.jsx — Componente de Cabeçalho Global
- *
- * Responsabilidades:
- * - Exibir a marca (logo) da plataforma
- * - Navegação principal entre páginas
- * - Autenticação: login, cadastro e logout
- * - Modal de login/cadastro
- *
- * Fluxo de autenticação:
- * - O usuário é salvo no localStorage do navegador como JSON
- * - Ao fazer login, o objeto User é recuperado e exibido no header
- * - Ao sair, o localStorage é limpo e o estado é redefinido
- *
- * Comunicação entre componentes:
- * - Usa eventos customizados (window.dispatchEvent) para notificar
- *   outras páginas quando o usuário muda (login/logout)
- */
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../../../services/api';
@@ -33,12 +14,14 @@ function Header() {
 
     // ── Estado: campos do formulário de login ──
     const [loginEmail, setLoginEmail] = useState('');
+    const [loginPassword, setLoginPassword] = useState('');
 
     // ── Estado: campos do formulário de cadastro ──
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [cpf, setCpf] = useState('');
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [dob, setDob] = useState('');
 
     // ── Estado: menu dropdown do usuário ──
@@ -49,9 +32,8 @@ function Header() {
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
-    const location = useLocation(); // Para destacar o link ativo
+    const location = useLocation();
 
-    // Lê o usuário do localStorage ao montar o componente
     const loadUser = () => {
         const raw = localStorage.getItem('event_ticket_user');
         setCurrentUser(raw ? JSON.parse(raw) : null);
@@ -60,8 +42,6 @@ function Header() {
     useEffect(() => {
         loadUser();
 
-        // Escuta o evento 'userChanged' — disparado por qualquer página
-        // quando o usuário faz login ou logout
         const handleUserChange = () => loadUser();
         const handleOpenAuth = () => {
             setShowModal(true);
@@ -78,7 +58,6 @@ function Header() {
         };
     }, []);
 
-    // Fecha o menu do usuário ao clicar fora dele
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (!e.target.closest('.user-menu-wrapper')) {
@@ -91,54 +70,49 @@ function Header() {
 
     const handleLogout = () => {
         localStorage.removeItem('event_ticket_user');
+        localStorage.removeItem('event_ticket_token');
         setCurrentUser(null);
         setShowUserMenu(false);
         window.dispatchEvent(new Event('userChanged'));
         navigate('/');
     };
 
-    // ── Login: busca o usuário pelo e-mail ──
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
-        if (!loginEmail.trim()) {
-            setError('Por favor, insira seu e-mail.');
+        if (!loginEmail.trim() || !loginPassword) {
+            setError('Por favor, preencha todos os campos.');
             setLoading(false);
             return;
         }
 
         try {
-            // Busca todos os usuários e encontra o que tem o e-mail informado.
-            // Em produção, isso seria feito com um endpoint de autenticação real.
-            const users = await api.users.getAll();
-            const found = users.find(
-                u => u.email.toLowerCase() === loginEmail.toLowerCase().trim()
-            );
-
-            if (found) {
-                localStorage.setItem('event_ticket_user', JSON.stringify(found));
-                setCurrentUser(found);
-                window.dispatchEvent(new Event('userChanged'));
-                closeModal();
-            } else {
-                setError('E-mail não encontrado. Crie uma conta para continuar.');
-            }
-        } catch {
-            setError('Não foi possível conectar ao servidor. Tente novamente.');
+            const response = await api.auth.login({
+                email: loginEmail.trim(),
+                password: loginPassword
+            });
+            
+            localStorage.setItem('event_ticket_token', response.token);
+            localStorage.setItem('event_ticket_user', JSON.stringify(response.user));
+            
+            setCurrentUser(response.user);
+            window.dispatchEvent(new Event('userChanged'));
+            closeModal();
+        } catch (err) {
+            setError(err.message || 'Falha ao realizar login.');
         } finally {
             setLoading(false);
         }
     };
 
-    // ── Cadastro: cria um novo usuário na API ──
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
-        if (!firstName.trim() || !lastName.trim() || !cpf.trim() || !email.trim() || !dob) {
+        if (!firstName.trim() || !lastName.trim() || !cpf.trim() || !email.trim() || !password || !dob) {
             setError('Preencha todos os campos para continuar.');
             setLoading(false);
             return;
@@ -150,12 +124,22 @@ function Header() {
                 lastName: lastName.trim(),
                 cpf: cpf.trim(),
                 email: email.trim().toLowerCase(),
+                password: password,
                 dateOfBirth: new Date(dob).toISOString(),
             };
 
-            const created = await api.users.create(newUser);
-            localStorage.setItem('event_ticket_user', JSON.stringify(created));
-            setCurrentUser(created);
+            await api.auth.register(newUser);
+            
+            // Auto login after register
+            const loginResponse = await api.auth.login({
+                email: newUser.email,
+                password: newUser.password
+            });
+
+            localStorage.setItem('event_ticket_token', loginResponse.token);
+            localStorage.setItem('event_ticket_user', JSON.stringify(loginResponse.user));
+            
+            setCurrentUser(loginResponse.user);
             window.dispatchEvent(new Event('userChanged'));
             closeModal();
         } catch (err) {
@@ -169,20 +153,26 @@ function Header() {
         setShowModal(false);
         setError('');
         setLoginEmail('');
+        setLoginPassword('');
         setFirstName('');
         setLastName('');
         setCpf('');
         setEmail('');
+        setPassword('');
         setDob('');
     };
 
-    // Determina se um link está ativo (para destacar na navegação)
+    const handleBackdropClick = (e) => {
+        if (e.target.className === 'modal-overlay') {
+            closeModal();
+        }
+    };
+
     const isActive = (path) => location.pathname === path;
 
     return (
         <>
             <header className="header">
-                {/* Logo / Marca */}
                 <Link to="/" className="header-brand">
                     <div className="brand-icon">
                         <Icon name="ticket" size={18} />
@@ -190,7 +180,6 @@ function Header() {
                     <span className="brand-name">EventTicket</span>
                 </Link>
 
-                {/* Navegação principal — foco em descobrir eventos e comprar ingressos */}
                 <nav className="header-nav">
                     <Link
                         to="/"
@@ -216,18 +205,15 @@ function Header() {
                     </Link>
                 </nav>
 
-                {/* Área de autenticação / perfil */}
                 <div className="header-auth">
                     {currentUser ? (
                         <div className="user-menu-wrapper">
-                            {/* Botão do avatar — abre o menu dropdown */}
                             <button
                                 className="user-avatar-btn"
                                 onClick={() => setShowUserMenu(v => !v)}
                                 aria-label="Menu do usuário"
                             >
                                 <div className="user-avatar">
-                                    {/* Inicial do nome do usuário */}
                                     {currentUser.firstName.charAt(0).toUpperCase()}
                                 </div>
                                 <span className="user-name-display">
@@ -238,7 +224,6 @@ function Header() {
                                 />
                             </button>
 
-                            {/* Menu dropdown */}
                             {showUserMenu && (
                                 <div className="user-dropdown">
                                     <div className="user-dropdown-header">
@@ -257,7 +242,6 @@ function Header() {
                                         Meu Perfil
                                     </Link>
 
-                                    {/* "Organizar" é uma funcionalidade adicional — não é o foco principal */}
                                     <Link
                                         to="/organizar"
                                         className="user-dropdown-item"
@@ -291,175 +275,143 @@ function Header() {
                 </div>
             </header>
 
-            {/* ── Modal de autenticação ── */}
             {showModal && (
-                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
-                    <div className="modal-card">
-                        <button className="modal-close-btn" onClick={closeModal} aria-label="Fechar">
-                            <Icon name="x" size={20} />
-                        </button>
-
+                <div className="modal-overlay" onClick={handleBackdropClick}>
+                    <div className="modal-content">
+                        <button className="modal-close" onClick={closeModal}>&times;</button>
+                        
                         {!isRegistering ? (
-                            /* Formulário de Login */
                             <form onSubmit={handleLogin} className="auth-form">
-                                <div className="auth-form-header">
-                                    <div className="auth-icon-wrapper">
-                                        <Icon name="user" size={24} />
-                                    </div>
-                                    <h2>Acessar Conta</h2>
-                                    <p>Entre com seu e-mail para comprar ingressos e ver seu histórico</p>
-                                </div>
-
-                                {error && (
-                                    <div className="alert alert-danger">
-                                        <Icon name="alert-circle" size={16} />
-                                        {error}
-                                    </div>
-                                )}
-
-                                <div className="form-field">
-                                    <label className="form-label" htmlFor="loginEmail">E-mail</label>
+                                <h2>Acessar Minha Conta</h2>
+                                <p className="auth-subtitle">Entre com seu e-mail e senha para ver seus ingressos</p>
+                                
+                                {error && <div className="auth-error">{error}</div>}
+                                
+                                <div className="form-group">
+                                    <label htmlFor="loginEmail">E-mail</label>
                                     <input
-                                        className="form-input"
                                         type="email"
                                         id="loginEmail"
-                                        placeholder="seu@email.com"
+                                        placeholder="exemplo@email.com"
                                         value={loginEmail}
-                                        onChange={e => setLoginEmail(e.target.value)}
-                                        autoFocus
+                                        onChange={(e) => setLoginEmail(e.target.value)}
                                         required
                                     />
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary btn-lg"
-                                    disabled={loading}
-                                    style={{ width: '100%', marginTop: '8px' }}
-                                >
-                                    {loading
-                                        ? <><Icon name="loader" size={16} />Entrando...</>
-                                        : <><Icon name="log-in" size={16} />Entrar</>
-                                    }
+                                <div className="form-group">
+                                    <label htmlFor="loginPassword">Senha</label>
+                                    <input
+                                        type="password"
+                                        id="loginPassword"
+                                        placeholder="Sua senha"
+                                        value={loginPassword}
+                                        onChange={(e) => setLoginPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                
+                                <button type="submit" className="btn-primary-auth" disabled={loading}>
+                                    {loading ? 'Entrando...' : 'Entrar'}
                                 </button>
-
-                                <p className="auth-toggle-text">
+                                
+                                <div className="auth-toggle">
                                     Não tem uma conta?{' '}
-                                    <button
-                                        type="button"
-                                        className="link-btn"
-                                        onClick={() => { setIsRegistering(true); setError(''); }}
-                                    >
-                                        Criar conta gratuita
+                                    <button type="button" onClick={() => { setIsRegistering(true); setError(''); }} className="btn-link-auth">
+                                        Criar Conta
                                     </button>
-                                </p>
+                                </div>
                             </form>
                         ) : (
-                            /* Formulário de Cadastro */
                             <form onSubmit={handleRegister} className="auth-form">
-                                <div className="auth-form-header">
-                                    <div className="auth-icon-wrapper">
-                                        <Icon name="user" size={24} />
-                                    </div>
-                                    <h2>Criar Conta</h2>
-                                    <p>Preencha seus dados para começar a adquirir ingressos</p>
-                                </div>
-
-                                {error && (
-                                    <div className="alert alert-danger">
-                                        <Icon name="alert-circle" size={16} />
-                                        {error}
-                                    </div>
-                                )}
-
-                                <div className="form-row-two">
-                                    <div className="form-field">
-                                        <label className="form-label" htmlFor="firstName">Nome</label>
+                                <h2>Criar Conta</h2>
+                                <p className="auth-subtitle">Preencha seus dados para começar a adquirir ingressos</p>
+                                
+                                {error && <div className="auth-error">{error}</div>}
+                                
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="firstName">Nome</label>
                                         <input
-                                            className="form-input"
                                             type="text"
                                             id="firstName"
                                             placeholder="João"
                                             value={firstName}
-                                            onChange={e => setFirstName(e.target.value)}
+                                            onChange={(e) => setFirstName(e.target.value)}
                                             required
                                         />
                                     </div>
-                                    <div className="form-field">
-                                        <label className="form-label" htmlFor="lastName">Sobrenome</label>
+                                    <div className="form-group">
+                                        <label htmlFor="lastName">Sobrenome</label>
                                         <input
-                                            className="form-input"
                                             type="text"
                                             id="lastName"
                                             placeholder="Silva"
                                             value={lastName}
-                                            onChange={e => setLastName(e.target.value)}
+                                            onChange={(e) => setLastName(e.target.value)}
                                             required
                                         />
                                     </div>
                                 </div>
 
-                                <div className="form-field">
-                                    <label className="form-label" htmlFor="regEmail">E-mail</label>
+                                <div className="form-group">
+                                    <label htmlFor="email">E-mail</label>
                                     <input
-                                        className="form-input"
                                         type="email"
-                                        id="regEmail"
-                                        placeholder="joao@email.com"
+                                        id="email"
+                                        placeholder="joao.silva@email.com"
                                         value={email}
-                                        onChange={e => setEmail(e.target.value)}
+                                        onChange={(e) => setEmail(e.target.value)}
                                         required
                                     />
                                 </div>
 
-                                <div className="form-row-two">
-                                    <div className="form-field">
-                                        <label className="form-label" htmlFor="cpf">CPF</label>
+                                <div className="form-group">
+                                    <label htmlFor="password">Senha</label>
+                                    <input
+                                        type="password"
+                                        id="password"
+                                        placeholder="Crie uma senha"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="cpf">CPF</label>
                                         <input
-                                            className="form-input"
                                             type="text"
                                             id="cpf"
-                                            placeholder="000.000.000-00"
+                                            placeholder="123.456.789-00"
                                             value={cpf}
-                                            onChange={e => setCpf(e.target.value)}
+                                            onChange={(e) => setCpf(e.target.value)}
                                             required
                                         />
                                     </div>
-                                    <div className="form-field">
-                                        <label className="form-label" htmlFor="dob">Nascimento</label>
+                                    <div className="form-group">
+                                        <label htmlFor="dob">Data de Nascimento</label>
                                         <input
-                                            className="form-input"
                                             type="date"
                                             id="dob"
                                             value={dob}
-                                            onChange={e => setDob(e.target.value)}
+                                            onChange={(e) => setDob(e.target.value)}
                                             required
                                         />
                                     </div>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary btn-lg"
-                                    disabled={loading}
-                                    style={{ width: '100%', marginTop: '8px' }}
-                                >
-                                    {loading
-                                        ? <><Icon name="loader" size={16} />Criando conta...</>
-                                        : <><Icon name="check" size={16} />Criar Conta</>
-                                    }
+                                <button type="submit" className="btn-primary-auth" disabled={loading}>
+                                    {loading ? 'Registrando...' : 'Registrar e Acessar'}
                                 </button>
-
-                                <p className="auth-toggle-text">
+                                
+                                <div className="auth-toggle">
                                     Já tem uma conta?{' '}
-                                    <button
-                                        type="button"
-                                        className="link-btn"
-                                        onClick={() => { setIsRegistering(false); setError(''); }}
-                                    >
-                                        Fazer login
+                                    <button type="button" onClick={() => { setIsRegistering(false); setError(''); }} className="btn-link-auth">
+                                        Entrar
                                     </button>
-                                </p>
+                                </div>
                             </form>
                         )}
                     </div>

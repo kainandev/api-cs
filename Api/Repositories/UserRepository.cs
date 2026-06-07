@@ -24,6 +24,11 @@ namespace Api.Repositories {
                 .FirstOrDefaultAsync(u => u.Id == id && u.Status != UserStatus.Deleted);
         }
 
+        public async Task<User?> GetByEmail(string email) {
+            return await _db.Users
+                .FirstOrDefaultAsync(u => u.Email == email && u.Status != UserStatus.Deleted);
+        }
+
         // Cria um novo usuário, gerando ID e definindo valores iniciais
         public async Task<User> Create(User user) {
             user.Id = Guid.NewGuid().ToString();
