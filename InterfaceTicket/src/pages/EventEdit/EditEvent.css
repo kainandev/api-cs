@@ -1,0 +1,45 @@
+.edit-event-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.edit-event-card {
+    background: #1f2230;
+    border-radius: 16px;
+    padding: 32px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-save-event,
+.btn-cancel-event {
+    padding: 12px 24px;
+    cursor: pointer;
+}
+
+.edit-error {
+    color: #ff5f5f;
+    margin-bottom: 20px;
+}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../../assets/components/Header/header.jsx';
 import { api } from '../../services/api';
 import './AdminDashboard.css';
@@ -6,6 +7,8 @@ import './AdminDashboard.css';
 export default function AdminDashboard() {
   const [events, setEvents] = useState([]);
   const [activeTab, setActiveTab] = useState('events'); // 'events', 'create-event', 'create-batch', 'reports'
+
+  const navigate = useNavigate();
   
   // Selected event for reports
   const [selectedReportEventId, setSelectedReportEventId] = useState('');
@@ -260,10 +263,17 @@ export default function AdminDashboard() {
                                 {ev.status === 'Cancelled' || ev.status === 1 ? 'Cancelado' : isExpired ? 'Encerrado' : 'Ativo'}
                               </span>
                             </td>
-                            <td>
-                              <button onClick={() => handleDeleteEvent(ev.id)} className="btn-table-delete" title="Excluir evento">
+                            <td className="table-actions">
+                              <button
+                                onClick={() => navigate(`/admin/events/${ev.id}/edit`)} className="btn-table-edit">
+                                Editar
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteEvent(ev.id)} className="btn-table-delete">
                                 Excluir
                               </button>
+
                             </td>
                           </tr>
                         );
