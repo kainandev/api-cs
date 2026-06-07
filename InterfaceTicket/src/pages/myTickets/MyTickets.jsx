@@ -1,268 +1,357 @@
+/**
+ * MyTickets.jsx — Página de Meus Ingressos
+ *
+ * Exibe todos os ingressos comprados pelo usuário logado.
+ * Permite realizar check-in (simulação de entrada no evento)
+ * e cancelar ingressos não utilizados de eventos futuros.
+ *
+ * Se o usuário não estiver logado, exibe um campo de busca
+ * por CPF ou e-mail para encontrar os ingressos sem login formal.
+ *
+ * Rotas da API utilizadas:
+ *   GET    /api/tickets/user/{userId}  — ingressos do usuário
+ *   POST   /api/tickets/{id}/checkin  — realizar check-in
+ *   DELETE /api/tickets/{id}          — cancelar ingresso
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../../assets/components/Header/header.jsx';
 import { api } from '../../services/api';
+import { Icon } from '../../assets/components/icons/icons';
 import './MyTickets.css';
 
 export default function MyTickets() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  // Search state when not logged in
-  const [searchIdentifier, setSearchIdentifier] = useState('');
-  const [searchError, setSearchError] = useState('');
+    const [currentUser, setCurrentUser]       = useState(null);
+    const [tickets, setTickets]               = useState([]);
+    const [loading, setLoading]               = useState(false);
+    const [error, setError]                   = useState('');
 
-  const loadUser = () => {
-    const userStr = localStorage.getItem('event_ticket_user');
-    if (userStr) {
-      setCurrentUser(JSON.parse(userStr));
-    } else {
-      setCurrentUser(null);
-      setTickets([]);
-    }
-  };
+    // Estado para busca quando não está logado
+    const [searchValue, setSearchValue]       = useState('');
+    const [searchError, setSearchError]       = useState('');
+    const [searching, setSearching]           = useState(false);
 
-  useEffect(() => {
-    loadUser();
-
-    const handleUserChange = () => {
-      loadUser();
+    const loadUser = () => {
+        const raw = localStorage.getItem('event_ticket_user');
+        if (raw) setCurrentUser(JSON.parse(raw));
+        else { setCurrentUser(null); setTickets([]); }
     };
-    window.addEventListener('userChanged', handleUserChange);
 
-    return () => {
-      window.removeEventListener('userChanged', handleUserChange);
+    useEffect(() => {
+        loadUser();
+        const handler = () => loadUser();
+        window.addEventListener('userChanged', handler);
+        return () => window.removeEventListener('userChanged', handler);
+    }, []);
+
+    useEffect(() => {
+        if (currentUser) fetchTickets(currentUser.id);
+    }, [currentUser]);
+
+    const fetchTickets = async (userId) => {
+        setLoading(true);
+        setError('');
+        try {
+            const data = await api.tickets.getByUserId(userId);
+            // Ordena do mais recente para o mais antigo
+            setTickets(data.sort((a, b) => new Date(b.purchasedAt) - new Date(a.purchasedAt)));
+        } catch (err) {
+            setError('Erro ao carregar ingressos: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
     };
-  }, []);
 
-  // Fetch tickets whenever the logged in user changes
-  useEffect(() => {
-    if (currentUser) {
-      fetchUserTickets(currentUser.id);
-    }
-  }, [currentUser]);
+    // Busca o usuário pelo CPF ou e-mail sem exigir login formal
+    const handleSearchUser = async (e) => {
+        e.preventDefault();
+        setSearchError('');
+        const val = searchValue.trim();
+        if (!val) { setSearchError('Informe seu CPF ou e-mail.'); return; }
 
-  const fetchUserTickets = async (userId) => {
-    setLoading(true);
-    setError('');
-    try {
-      const ticketsData = await api.tickets.getByUserId(userId);
-      // Sort: recent first
-      const sorted = ticketsData.sort((a, b) => new Date(b.purchasedAt) - new Date(a.purchasedAt));
-      setTickets(sorted);
-    } catch (err) {
-      setError('Erro ao carregar ingressos: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setSearching(true);
+        try {
+            const users = await api.users.getAll();
+            const found = users.find(u =>
+                u.email.toLowerCase() === val.toLowerCase() ||
+                u.cpf.replace(/\D/g, '') === val.replace(/\D/g, '')
+            );
 
-  const handleSearchUser = async (e) => {
-    e.preventDefault();
-    setSearchError('');
-    setError('');
-    const idValue = searchIdentifier.trim();
+            if (found) {
+                localStorage.setItem('event_ticket_user', JSON.stringify(found));
+                setCurrentUser(found);
+                window.dispatchEvent(new Event('userChanged'));
+            } else {
+                setSearchError('Nenhum usuário encontrado com esse CPF ou e-mail.');
+            }
+        } catch {
+            setSearchError('Erro ao buscar. Tente novamente.');
+        } finally {
+            setSearching(false);
+        }
+    };
 
-    if (!idValue) {
-      setSearchError('Insira seu CPF ou E-mail.');
-      return;
-    }
+    const handleCheckIn = async (ticketId) => {
+        if (!window.confirm('Realizar check-in? Isso simula sua entrada física no evento e não pode ser desfeito.')) return;
+        try {
+            await api.tickets.checkIn(ticketId);
+            fetchTickets(currentUser.id);
+        } catch (err) {
+            alert(err.message || 'Erro ao realizar check-in.');
+        }
+    };
 
-    setLoading(true);
-    try {
-      const users = await api.users.getAll();
-      const foundUser = users.find(
-        u => u.email.toLowerCase() === idValue.toLowerCase() || u.cpf.replace(/\D/g, '') === idValue.replace(/\D/g, '')
-      );
+    const handleCancel = async (ticketId) => {
+        if (!window.confirm('Cancelar este ingresso? O valor será devolvido e o ingresso ficará inválido.')) return;
+        try {
+            await api.tickets.cancel(ticketId);
+            fetchTickets(currentUser.id);
+        } catch (err) {
+            alert(err.message || 'Erro ao cancelar ingresso.');
+        }
+    };
 
-      if (foundUser) {
-        // Log user in automatically to save state
-        localStorage.setItem('event_ticket_user', JSON.stringify(foundUser));
-        setCurrentUser(foundUser);
+    const handleSwitchUser = () => {
+        localStorage.removeItem('event_ticket_user');
+        setCurrentUser(null);
         window.dispatchEvent(new Event('userChanged'));
-      } else {
-        setSearchError('Nenhum usuário encontrado com este CPF ou E-mail.');
-        setLoading(false);
-      }
-    } catch (err) {
-      setSearchError('Erro ao buscar usuário: ' + err.message);
-      setLoading(false);
-    }
-  };
+    };
 
-  const handleCheckIn = async (ticketId) => {
-    if (!window.confirm('Deseja realizar o check-in deste ingresso? Esta ação simula a sua entrada física no evento.')) {
-      return;
-    }
+    const getTypeLabel = (code) => {
+        const map = { 0: 'Normal', 1: 'Meia-Entrada', 2: 'VIP' };
+        return map[code] ?? 'Geral';
+    };
 
-    try {
-      await api.tickets.checkIn(ticketId);
-      alert('Check-in realizado com sucesso! Bom evento!');
-      // Reload tickets
-      if (currentUser) fetchUserTickets(currentUser.id);
-    } catch (err) {
-      alert(err.message || 'Erro ao realizar check-in.');
-    }
-  };
+    return (
+        <>
+            <Header />
 
-  const handleCancelTicket = async (ticketId) => {
-    if (!window.confirm('Tem certeza que deseja cancelar este ingresso? O valor será reembolsado e o ingresso será invalidado.')) {
-      return;
-    }
+            <main className="my-tickets-page">
 
-    try {
-      await api.tickets.cancel(ticketId);
-      alert('Ingresso cancelado com sucesso.');
-      // Reload tickets
-      if (currentUser) fetchUserTickets(currentUser.id);
-    } catch (err) {
-      alert(err.message || 'Erro ao cancelar ingresso.');
-    }
-  };
-
-  const getTicketTypeLabel = (typeCode) => {
-    switch (typeCode) {
-      case 0: return 'Normal';
-      case 1: return 'Meia-Entrada';
-      case 2: return 'VIP';
-      default: return 'Geral';
-    }
-  };
-
-  return (
-    <>
-      <Header />
-      <div className="my-tickets-container">
-        <section className="tickets-hero">
-          <h1>Meus Ingressos</h1>
-          <p>Consulte, realize check-in de entradas ou cancele seus ingressos digitais.</p>
-        </section>
-
-        <main className="tickets-main">
-          {!currentUser ? (
-            <div className="tickets-search-box">
-              <h2>Acesse Seus Ingressos</h2>
-              <p>Insira seus dados cadastrados para listar seus ingressos comprados.</p>
-              
-              {searchError && <div className="search-error-msg">{searchError}</div>}
-              
-              <form onSubmit={handleSearchUser} className="search-form-tickets">
-                <div className="form-group-tickets">
-                  <label htmlFor="searchIdentifier">CPF ou E-mail</label>
-                  <input
-                    type="text"
-                    id="searchIdentifier"
-                    placeholder="Ex: joao@email.com ou 123.456.789-00"
-                    value={searchIdentifier}
-                    onChange={(e) => setSearchIdentifier(e.target.value)}
-                    required
-                  />
+                {/* ── Cabeçalho ── */}
+                <div className="tickets-page-header">
+                    <div className="tickets-header-inner">
+                        <h1>Meus Ingressos</h1>
+                        <p>Visualize, faça check-in ou cancele seus ingressos digitais.</p>
+                    </div>
                 </div>
-                <button type="submit" disabled={loading} className="btn-search-tickets">
-                  {loading ? 'Buscando...' : 'Buscar Ingressos'}
-                </button>
-              </form>
+
+                <div className="tickets-content">
+                    {!currentUser ? (
+                        /* ── Formulário de busca (sem login) ── */
+                        <div className="tickets-search-panel">
+                            <div className="search-panel-icon">
+                                <Icon name="ticket" size={28} />
+                            </div>
+                            <h2>Encontrar Meus Ingressos</h2>
+                            <p>Informe seu CPF ou e-mail cadastrado para acessar seus ingressos.</p>
+
+                            {searchError && (
+                                <div className="alert alert-danger">
+                                    <Icon name="alert-circle" size={16} />{searchError}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleSearchUser} className="search-form">
+                                <div className="form-field" style={{ width: '100%' }}>
+                                    <label className="form-label" htmlFor="searchVal">CPF ou E-mail</label>
+                                    <input
+                                        className="form-input"
+                                        type="text"
+                                        id="searchVal"
+                                        placeholder="seu@email.com ou 000.000.000-00"
+                                        value={searchValue}
+                                        onChange={e => setSearchValue(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <button type="submit" className="btn btn-primary btn-lg" disabled={searching} style={{ width: '100%' }}>
+                                    {searching
+                                        ? <><Icon name="loader" size={16}/>Buscando...</>
+                                        : <><Icon name="search" size={16}/>Buscar Ingressos</>
+                                    }
+                                </button>
+                            </form>
+
+                            <p className="search-hint">
+                                <Icon name="info" size={14}/>
+                                Ou <button className="link-btn" onClick={() => window.dispatchEvent(new Event('openAuthModal'))}>
+                                    faça login
+                                </button> para acesso completo.
+                            </p>
+                        </div>
+                    ) : (
+                        /* ── Conteúdo: ingressos do usuário ── */
+                        <div className="tickets-user-section">
+
+                            {/* Cabeçalho do usuário */}
+                            <div className="user-context-bar">
+                                <div className="user-context-info">
+                                    <div className="user-context-avatar">
+                                        {currentUser.firstName.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <strong>{currentUser.firstName} {currentUser.lastName}</strong>
+                                        <span>{currentUser.email}</span>
+                                    </div>
+                                </div>
+                                <button className="btn btn-ghost btn-sm" onClick={handleSwitchUser}>
+                                    <Icon name="log-out" size={14}/>
+                                    Trocar conta
+                                </button>
+                            </div>
+
+                            {/* Conteúdo dos ingressos */}
+                            {loading ? (
+                                <div className="loading-spinner">
+                                    <Icon name="loader" size={28}/>
+                                    <p>Carregando seus ingressos...</p>
+                                </div>
+                            ) : error ? (
+                                <div className="alert alert-danger">
+                                    <Icon name="alert-circle" size={16}/>{error}
+                                </div>
+                            ) : tickets.length === 0 ? (
+                                <div className="tickets-empty">
+                                    <div className="tickets-empty-icon">
+                                        <Icon name="ticket" size={32}/>
+                                    </div>
+                                    <h3>Nenhum ingresso encontrado</h3>
+                                    <p>Você ainda não comprou ingressos. Explore os eventos disponíveis!</p>
+                                    <Link to="/" className="btn btn-primary">
+                                        <Icon name="home" size={16}/>
+                                        Ver Eventos
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="tickets-list">
+                                    {tickets.map(ticket => {
+                                        const eventDate = ticket.eventTicket?.event?.date
+                                            ? new Date(ticket.eventTicket.event.date)
+                                            : null;
+                                        const isExpired = eventDate && eventDate < new Date();
+                                        const isUsed    = ticket.isUsed;
+
+                                        // Determina o status visual do ingresso
+                                        let statusKey = 'active';
+                                        let statusLabel = 'Ativo';
+                                        if (isUsed)         { statusKey = 'used';    statusLabel = 'Utilizado'; }
+                                        else if (isExpired) { statusKey = 'expired'; statusLabel = 'Expirado'; }
+
+                                        return (
+                                            <TicketCard
+                                                key={ticket.id}
+                                                ticket={ticket}
+                                                eventDate={eventDate}
+                                                isExpired={isExpired}
+                                                isUsed={isUsed}
+                                                statusKey={statusKey}
+                                                statusLabel={statusLabel}
+                                                typeLabel={getTypeLabel(ticket.eventTicket?.type)}
+                                                onCheckIn={handleCheckIn}
+                                                onCancel={handleCancel}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </main>
+        </>
+    );
+}
+
+/**
+ * TicketCard — Card individual de um ingresso
+ *
+ * Apresenta um design de "stub de ingresso" com a borda tracejada
+ * separando as informações do evento das ações do usuário.
+ */
+function TicketCard({ ticket, eventDate, isExpired, isUsed, statusKey, statusLabel, typeLabel, onCheckIn, onCancel }) {
+    return (
+        <article className={`ticket-card ticket-card--${statusKey}`}>
+            {/* Parte esquerda: informações do evento */}
+            <div className="ticket-card-left">
+                <span className={`badge badge-${statusKey === 'active' ? 'active' : statusKey === 'used' ? 'primary' : 'muted'}`}>
+                    {statusLabel}
+                </span>
+
+                <h3 className="ticket-event-title">
+                    {ticket.eventTicket?.event?.name ?? 'Evento'}
+                </h3>
+
+                <ul className="ticket-meta-list">
+                    {eventDate && (
+                        <li>
+                            <Icon name="calendar" size={13}/>
+                            {eventDate.toLocaleDateString('pt-BR', {
+                                day: '2-digit', month: 'short',
+                                year: 'numeric', hour: '2-digit', minute: '2-digit',
+                            })}
+                        </li>
+                    )}
+                    {ticket.eventTicket?.event?.address && (
+                        <li>
+                            <Icon name="map-pin" size={13}/>
+                            {ticket.eventTicket.event.address}
+                        </li>
+                    )}
+                </ul>
             </div>
-          ) : (
-            <div className="logged-tickets-section">
-              <div className="user-tickets-header">
-                <div>
-                  <h3>Ingressos de: <strong>{currentUser.firstName} {currentUser.lastName}</strong></h3>
-                  <p>E-mail: {currentUser.email} | CPF: {currentUser.cpf}</p>
-                </div>
-                <button onClick={() => {
-                  localStorage.removeItem('event_ticket_user');
-                  setCurrentUser(null);
-                  window.dispatchEvent(new Event('userChanged'));
-                }} className="btn-switch-user">
-                  Trocar de Conta
-                </button>
-              </div>
 
-              {loading ? (
-                <div className="tickets-loading">
-                  <div className="spinner"></div>
-                  <p>Carregando seus ingressos...</p>
-                </div>
-              ) : error ? (
-                <div className="tickets-error">
-                  <p>{error}</p>
-                  <button onClick={() => fetchUserTickets(currentUser.id)} className="btn-retry-tickets">Recarregar</button>
-                </div>
-              ) : tickets.length === 0 ? (
-                <div className="tickets-empty">
-                  <div className="empty-icon">🎟️</div>
-                  <h4>Você ainda não tem nenhum ingresso</h4>
-                  <p>Explore nossos eventos ativos e garanta sua presença!</p>
-                  <Link to="/" className="btn-explore-events">Ver Eventos Disponíveis</Link>
-                </div>
-              ) : (
-                <div className="tickets-list">
-                  {tickets.map(ticket => {
-                    const eventDate = ticket.eventTicket?.event?.date 
-                      ? new Date(ticket.eventTicket.event.date)
-                      : null;
-                    const isExpired = eventDate && eventDate < new Date();
-                    
-                    let statusClass = 'active';
-                    let statusText = 'Ativo';
-
-                    if (ticket.isUsed) {
-                      statusClass = 'used';
-                      statusText = 'Utilizado';
-                    } else if (isExpired) {
-                      statusClass = 'expired';
-                      statusText = 'Expirado';
-                    }
-
-                    return (
-                      <div key={ticket.id} className={`ticket-card-item ${statusClass}`}>
-                        <div className="ticket-card-left">
-                          <span className={`ticket-status-badge ${statusClass}`}>{statusText}</span>
-                          <h4 className="ticket-event-name">{ticket.eventTicket?.event?.name || 'Evento'}</h4>
-                          <p className="ticket-event-details">
-                            <span>📍 {ticket.eventTicket?.event?.address || 'Local não informado'}</span>
-                            <span>📅 {eventDate ? eventDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Data não informada'}</span>
-                          </p>
-                        </div>
-                        
-                        <div className="ticket-card-middle">
-                          <div className="ticket-type-badge-item">
-                            {getTicketTypeLabel(ticket.eventTicket?.type)}
-                          </div>
-                          <span className="ticket-id-label">ID: {ticket.id}</span>
-                          <span className="ticket-price-label">R$ {ticket.priceFinal.toFixed(2)}</span>
-                        </div>
-
-                        <div className="ticket-card-right-actions">
-                          {!ticket.isUsed && !isExpired && (
-                            <>
-                              <button onClick={() => handleCheckIn(ticket.id)} className="btn-ticket-checkin">
-                                Realizar Check-in
-                              </button>
-                              <button onClick={() => handleCancelTicket(ticket.id)} className="btn-ticket-cancel">
-                                Cancelar Ingresso
-                              </button>
-                            </>
-                          )}
-                          {ticket.isUsed && (
-                            <span className="checked-in-msg">✓ Entrada Validada às {ticket.usedAt ? new Date(ticket.usedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-                          )}
-                          {isExpired && !ticket.isUsed && (
-                            <span className="expired-msg">Evento encerrado</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+            {/* Separador estilo stub de ingresso */}
+            <div className="ticket-card-divider">
+                <div className="ticket-notch ticket-notch--top"/>
+                <div className="ticket-notch ticket-notch--bottom"/>
             </div>
-          )}
-        </main>
-      </div>
-    </>
-  );
+
+            {/* Parte central: tipo e preço */}
+            <div className="ticket-card-middle">
+                <span className="badge badge-primary">{typeLabel}</span>
+                <strong className="ticket-price">R$ {ticket.priceFinal.toFixed(2)}</strong>
+                <code className="ticket-id">{ticket.id.substring(0, 8)}</code>
+            </div>
+
+            {/* Parte direita: ações */}
+            <div className="ticket-card-right">
+                {!isUsed && !isExpired ? (
+                    <>
+                        <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => onCheckIn(ticket.id)}
+                        >
+                            <Icon name="door-open" size={14}/>
+                            Check-in
+                        </button>
+                        <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => onCancel(ticket.id)}
+                        >
+                            <Icon name="x" size={14}/>
+                            Cancelar
+                        </button>
+                    </>
+                ) : isUsed ? (
+                    <div className="ticket-used-info">
+                        <Icon name="check-circle" size={18}/>
+                        <span>
+                            Entrada às{' '}
+                            {ticket.usedAt
+                                ? new Date(ticket.usedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                                : '—'
+                            }
+                        </span>
+                    </div>
+                ) : (
+                    <div className="ticket-expired-info">
+                        <Icon name="clock" size={16}/>
+                        <span>Evento encerrado</span>
+                    </div>
+                )}
+            </div>
+        </article>
+    );
 }
