@@ -6,6 +6,7 @@ namespace Api.Models {
         public string LastName { get; set; } = "";
         public string CPF { get; set; } = "";
         public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
         public DateTime DateOfBirth { get; set; }
         public UserStatus Status { get; set; } = UserStatus.Active;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

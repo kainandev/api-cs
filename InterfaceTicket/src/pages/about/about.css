@@ -1,0 +1,273 @@
+/* about.css — Estilos da Página Sobre */
+
+.about-page {
+    min-height: calc(100svh - 64px);
+    background: var(--color-surface);
+    padding: var(--space-12) var(--space-10);
+}
+
+.about-content {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+/* ── Hero ── */
+.about-hero {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.about-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-xl);
+    background: var(--color-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.about-hero h1 {
+    font-size: var(--text-4xl);
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.about-hero p {
+    font-size: var(--text-lg);
+    color: var(--color-text-muted);
+    max-width: 580px;
+    line-height: 1.6;
+}
+
+/* ── Seções ── */
+.about-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.about-section h2 {
+    font-size: var(--text-2xl);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    padding-bottom: var(--space-4);
+    border-bottom: 2px solid var(--color-border);
+}
+
+/* ── Grid de tecnologias ── */
+.tech-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+}
+
+.tech-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.tech-card-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-md);
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tech-card h3 {
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--color-text-heading);
+}
+
+.tech-card p {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+/* ── Diagrama de arquitetura ── */
+.arch-diagram {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.arch-layer {
+    flex: 1;
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    border-right: 1px solid var(--color-border);
+}
+
+.arch-layer:last-child {
+    border-right: none;
+}
+
+.arch-layer .app-icon {
+    color: var(--color-primary);
+}
+
+.arch-layer strong {
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--color-text-heading);
+}
+
+.arch-layer p {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+.arch-arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-2);
+    color: var(--color-text-muted);
+    background: var(--color-surface-alt);
+}
+
+/* ── Lista de padrões ── */
+.patterns-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.pattern-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.pattern-item:last-child {
+    border-bottom: none;
+}
+
+.pattern-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.pattern-item strong {
+    display: block;
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--color-text-heading);
+    margin-bottom: var(--space-1);
+}
+
+.pattern-item p {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+/* ── CTA final ── */
+.about-cta {
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, rgba(79, 70, 229, 0.08) 100%);
+    border: 1px solid rgba(124, 58, 237, 0.15);
+    border-radius: var(--radius-xl);
+    padding: var(--space-10);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.about-cta h2 {
+    font-size: var(--text-2xl);
+    font-weight: 800;
+}
+
+.about-cta p {
+    color: var(--color-text-muted);
+    font-size: var(--text-base);
+}
+
+.cta-buttons {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ── Responsividade ── */
+@media (max-width: 768px) {
+    .about-page {
+        padding: var(--space-8) var(--space-4);
+    }
+
+    .tech-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .arch-diagram {
+        flex-direction: column;
+    }
+
+    .arch-layer {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .arch-layer:last-child {
+        border-bottom: none;
+    }
+
+    .arch-arrow {
+        transform: rotate(90deg);
+        padding: var(--space-2) 0;
+        justify-content: center;
+    }
+
+    .cta-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .cta-buttons .btn {
+        width: 100%;
+    }
+}
