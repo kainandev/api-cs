@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Api.Models;
 using Api.Repositories;
@@ -36,14 +38,15 @@ namespace Api.Controllers {
         // POST /api/events
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Event ev) {
-            if (string.IsNullOrWhiteSpace(ev.Name)) {
+            if (string.IsNullOrWhiteSpace(ev.Name))
                 return BadRequest("O nome do evento é obrigatório.");
-            }
 
-            // Regra: não pode criar evento com data no passado
-            if (ev.Date < DateTime.UtcNow) {
+            if (ev.Date < DateTime.UtcNow)
                 return BadRequest("A data do evento não pode ser no passado.");
-            }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            ev.OwnerId = userId;
 
             var created = await _eventRepository.Create(ev);
 
@@ -55,14 +58,16 @@ namespace Api.Controllers {
         public async Task<IActionResult> Update(int id, [FromBody] Event updatedData) {
             var existing = await _eventRepository.GetById(id);
 
-            if (existing == null) {
+            if (existing == null)
                 return NotFound("Evento não encontrado.");
-            }
 
-            // Regra: não pode alterar data de evento para o passado
-            if (updatedData.Date < DateTime.UtcNow) {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (existing.OwnerId != userId)
+                return Forbid();
+
+            if (updatedData.Date < DateTime.UtcNow)
                 return BadRequest("A nova data do evento não pode ser no passado.");
-            }
 
             var updated = await _eventRepository.Update(id, updatedData);
 
@@ -74,16 +79,21 @@ namespace Api.Controllers {
         public async Task<IActionResult> Delete(int id) {
             var ev = await _eventRepository.GetById(id);
 
-            if (ev == null) {
+            if (ev == null)
                 return NotFound("Evento não encontrado.");
-            }
 
-            // Regra: não pode excluir evento que já possui ingressos vendidos em qualquer lote
-            bool hasTicketsSold = ev.EventTickets.Any(et => et.SoldAmount > 0);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (hasTicketsSold) {
-                return BadRequest("Não é possível excluir um evento que possui ingressos vendidos.");
-            }
+            if (ev.OwnerId != userId)
+                return Forbid();
+
+            bool hasTicketsSold =
+                ev.EventTickets.Any(et => et.SoldAmount > 0);
+
+            if (hasTicketsSold)
+                return BadRequest(
+                    "Não é possível excluir um evento que possui ingressos vendidos."
+                );
 
             await _eventRepository.Delete(id);
 
@@ -93,6 +103,7 @@ namespace Api.Controllers {
         // GET /api/events/{id}/summary  →  resumo financeiro do evento
         [HttpGet("{id}/summary")]
         public async Task<IActionResult> GetSummary(int id) {
+
             var ev = await _eventRepository.GetById(id);
 
             if (ev == null) {
@@ -128,6 +139,7 @@ namespace Api.Controllers {
         // GET /api/events/{id}/attendees  →  lista de participantes para controle de entrada
         [HttpGet("{id}/attendees")]
         public async Task<IActionResult> GetAttendees(int id) {
+
             var ev = await _eventRepository.GetById(id);
 
             if (ev == null) {
