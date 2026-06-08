@@ -432,7 +432,7 @@ export default function OrganizePage() {
                                                             {evDate.toLocaleDateString('pt-BR')}
                                                             &nbsp;{evDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                                         </td>
-                                                        <td className="table-meta">
+                                                        <td>
                                                             <Icon name="map-pin" size={13} />
                                                             {ev.address}
                                                         </td>

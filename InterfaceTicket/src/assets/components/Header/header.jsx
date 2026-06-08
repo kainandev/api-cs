@@ -118,6 +118,14 @@ function Header() {
             return;
         }
 
+        const cleanCpf = cpf.replace(/\D/g, '');
+
+        if (!validateCPF(cleanCpf)) {
+            setError('CPF inválido.');
+            setLoading(false);
+            return;
+        }
+
         try {
             const newUser = {
                 firstName: firstName.trim(),
@@ -169,6 +177,49 @@ function Header() {
     };
 
     const isActive = (path) => location.pathname === path;
+
+    function formatCPF(value) {
+        return value
+            .replace(/\D/g, '')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1-$2')
+            .slice(0, 14);
+    }
+
+    function validateCPF(cpf) {
+        cpf = cpf.replace(/\D/g, '');
+
+        if (cpf.length !== 11) return false;
+
+        if (/^(\d)\1+$/.test(cpf)) return false;
+
+        let sum = 0;
+
+        for (let i = 0; i < 9; i++) {
+            sum += parseInt(cpf[i]) * (10 - i);
+        }
+
+        let digit = 11 - (sum % 11);
+
+        if (digit >= 10) digit = 0;
+
+        if (digit !== parseInt(cpf[9])) {
+            return false;
+        }
+
+        sum = 0;
+
+        for (let i = 0; i < 10; i++) {
+            sum += parseInt(cpf[i]) * (11 - i);
+        }
+
+        digit = 11 - (sum % 11);
+
+        if (digit >= 10) digit = 0;
+
+        return digit === parseInt(cpf[10]);
+    }
 
     return (
         <>
@@ -277,8 +328,8 @@ function Header() {
 
             {showModal && (
                 <div className="modal-overlay" onClick={handleBackdropClick}>
-                    <div className="modal-content">
-                        <button className="modal-close" onClick={closeModal}>&times;</button>
+                    <div className="modal-card">
+                        <button className="modal-close-btn" onClick={closeModal}>&times;</button>
                         
                         {!isRegistering ? (
                             <form onSubmit={handleLogin} className="auth-form">
@@ -315,9 +366,9 @@ function Header() {
                                     {loading ? 'Entrando...' : 'Entrar'}
                                 </button>
                                 
-                                <div className="auth-toggle">
+                                <div className="auth-toggle-text">
                                     Não tem uma conta?{' '}
-                                    <button type="button" onClick={() => { setIsRegistering(true); setError(''); }} className="btn-link-auth">
+                                    <button type="button" onClick={() => { setIsRegistering(true); setError(''); }} className="link-btn">
                                         Criar Conta
                                     </button>
                                 </div>
@@ -329,7 +380,7 @@ function Header() {
                                 
                                 {error && <div className="auth-error">{error}</div>}
                                 
-                                <div className="form-row">
+                                <div className="form-row-two">
                                     <div className="form-group">
                                         <label htmlFor="firstName">Nome</label>
                                         <input
@@ -378,15 +429,17 @@ function Header() {
                                     />
                                 </div>
 
-                                <div className="form-row">
+                                <div className="form-row-two">
                                     <div className="form-group">
+
                                         <label htmlFor="cpf">CPF</label>
                                         <input
                                             type="text"
                                             id="cpf"
-                                            placeholder="123.456.789-00"
+                                            placeholder="000.000.000-00"
                                             value={cpf}
-                                            onChange={(e) => setCpf(e.target.value)}
+                                            maxLength={14}
+                                            onChange={(e) => setCpf(formatCPF(e.target.value))}
                                             required
                                         />
                                     </div>
@@ -406,9 +459,9 @@ function Header() {
                                     {loading ? 'Registrando...' : 'Registrar e Acessar'}
                                 </button>
                                 
-                                <div className="auth-toggle">
+                                <div className="auth-toggle-text">
                                     Já tem uma conta?{' '}
-                                    <button type="button" onClick={() => { setIsRegistering(false); setError(''); }} className="btn-link-auth">
+                                    <button type="button" onClick={() => { setIsRegistering(false); setError(''); }} className="link-btn">
                                         Entrar
                                     </button>
                                 </div>
